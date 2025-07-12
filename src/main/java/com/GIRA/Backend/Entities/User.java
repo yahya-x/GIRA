@@ -91,6 +91,12 @@ public class User extends BaseEntity implements UserDetails {
     private String preferences;
 
     /**
+     * Date and time of the user's last login.
+     */
+    @Column(name = "derniere_connexion")
+    private LocalDateTime derniereConnexion;
+
+    /**
      * The role assigned to the user (many users can have the same role).
      */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -327,6 +333,14 @@ public class User extends BaseEntity implements UserDetails {
 
     public void setPreferences(String preferences) {
         this.preferences = preferences;
+    }
+
+    public LocalDateTime getDerniereConnexion() {
+        return derniereConnexion;
+    }
+
+    public void setDerniereConnexion(LocalDateTime derniereConnexion) {
+        this.derniereConnexion = derniereConnexion;
     }
 
     public Role getRole() {
