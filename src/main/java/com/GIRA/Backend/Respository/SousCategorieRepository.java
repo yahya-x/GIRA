@@ -12,19 +12,41 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repository interface for managing SousCategorie entities.
+ * Provides data access methods for complaint subcategories and hierarchy.
+ *
+ * @author Mohamed Yahya Jabrane
+ * @since 1.0
+ */
 @Repository
 public interface SousCategorieRepository extends JpaRepository<SousCategorie, UUID> {
-
-    // Find all active subcategories for a category
+    /**
+     * Finds all active subcategories for a category.
+     * @param categorieId the category UUID
+     * @return list of active subcategories for the category
+     */
     List<SousCategorie> findByCategorie_IdAndActifTrue(UUID categorieId);
-
-    // Find by name (case-insensitive)
+    /**
+     * Finds a subcategory by name (case-insensitive).
+     * @param nom the subcategory name
+     * @return optional containing the subcategory if found
+     */
     Optional<SousCategorie> findByNomIgnoreCase(String nom);
-
-    // Find by parent category
+    /**
+     * Finds subcategories by parent category ID.
+     * @param categorieId the category UUID
+     * @return list of subcategories for the category
+     */
     List<SousCategorie> findByCategorie_Id(UUID categorieId);
-
-    // Advanced search with pagination
+    /**
+     * Advanced search with filters and pagination.
+     * @param nom the subcategory name (optional)
+     * @param actif active status (optional)
+     * @param categorieId category UUID (optional)
+     * @param pageable pagination parameters
+     * @return page of subcategories matching the filters
+     */
     @Query("SELECT s FROM SousCategorie s WHERE " +
            "(:nom IS NULL OR LOWER(s.nom) LIKE LOWER(CONCAT('%', :nom, '%'))) AND " +
            "(:actif IS NULL OR s.actif = :actif) AND " +
