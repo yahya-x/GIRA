@@ -12,22 +12,46 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repository interface for managing Categorie entities.
+ * Provides data access methods for complaint categories and hierarchy.
+ *
+ * @author Mohamed Yahya Jabrane
+ * @since 1.0
+ */
 @Repository
 public interface CategorieRepository extends JpaRepository<Categorie, UUID> {
-
-    // Find all active categories
+    /**
+     * Finds all active categories.
+     * @return list of active categories
+     */
     List<Categorie> findByActifTrue();
-
-    // Find by parent category
+    /**
+     * Finds categories by parent category ID.
+     * @param parentId the parent category UUID
+     * @return list of categories with the specified parent
+     */
     List<Categorie> findByParent_Id(UUID parentId);
-
-    // Find by name (case-insensitive)
+    /**
+     * Finds a category by name (case-insensitive).
+     * @param nom the category name
+     * @return optional containing the category if found
+     */
     Optional<Categorie> findByNomIgnoreCase(String nom);
-
-    // Count by parent
+    /**
+     * Counts categories by parent category ID.
+     * @param parentId the parent category UUID
+     * @return number of categories with the specified parent
+     */
     long countByParent_Id(UUID parentId);
-
-    // Advanced search with pagination
+    /**
+     * Advanced search with filters and pagination.
+     * @param nom the category name (optional)
+     * @param actif active status (optional)
+     * @param parentId parent category UUID (optional)
+     * @param pageable pagination parameters
+     * @return page of categories matching the filters
+     */
     @Query("SELECT c FROM Categorie c WHERE " +
            "(:nom IS NULL OR LOWER(c.nom) LIKE LOWER(CONCAT('%', :nom, '%'))) AND " +
            "(:actif IS NULL OR c.actif = :actif) AND " +

@@ -28,4 +28,6 @@ public interface    HistoriqueRepository extends JpaRepository<Historique, UUID>
     // Count actions by type
     @Query("SELECT h.action, COUNT(h.id) FROM Historique h GROUP BY h.action")
     List<Object[]> countByActionType();
+
+    List<Historique> findByUtilisateur_Id(UUID utilisateurId);
 } 

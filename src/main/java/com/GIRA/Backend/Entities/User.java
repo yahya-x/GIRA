@@ -97,6 +97,12 @@ public class User extends BaseEntity implements UserDetails {
     private LocalDateTime derniereConnexion;
 
     /**
+     * Indicates whether the user is active (enabled).
+     */
+    @Column(name = "actif", nullable = false)
+    private boolean actif = true;
+
+    /**
      * The role assigned to the user (many users can have the same role).
      */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -341,6 +347,14 @@ public class User extends BaseEntity implements UserDetails {
 
     public void setDerniereConnexion(LocalDateTime derniereConnexion) {
         this.derniereConnexion = derniereConnexion;
+    }
+
+    public boolean isActif() {
+        return actif;
+    }
+
+    public void setActif(boolean actif) {
+        this.actif = actif;
     }
 
     public Role getRole() {

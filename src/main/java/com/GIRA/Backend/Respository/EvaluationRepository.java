@@ -10,22 +10,51 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Repository interface for managing Evaluation entities.
+ * Provides data access methods for complaint evaluations and feedback.
+ *
+ * @author Mohamed Yahya Jabrane
+ * @since 1.0
+ */
 @Repository
 public interface EvaluationRepository extends JpaRepository<Evaluation, UUID> {
-
-    // Find evaluations by complaint
+    /**
+     * Finds evaluations by complaint ID.
+     * @param reclamationId the complaint UUID
+     * @return list of evaluations for the complaint
+     */
     List<Evaluation> findByReclamation_Id(UUID reclamationId);
-
-    // Find evaluations by user
+    /**
+     * Finds evaluations by user ID.
+     * @param evaluateurId the user UUID
+     * @return list of evaluations by the user
+     */
     List<Evaluation> findByEvaluateurId(UUID evaluateurId);
-
-    // Find evaluations by rating
+    /**
+     * Finds evaluations by overall rating.
+     * @param noteGlobale the global rating
+     * @return list of evaluations with the specified rating
+     */
     List<Evaluation> findByNoteGlobale(Integer noteGlobale);
-
-    // Find evaluations by date range
+    /**
+     * Finds evaluations by evaluation date range.
+     * @param dateDebut start date
+     * @param dateFin end date
+     * @return list of evaluations in the date range
+     */
     List<Evaluation> findByDateEvaluationBetween(LocalDateTime dateDebut, LocalDateTime dateFin);
-
-    // Average rating for a complaint
+    /**
+     * Calculates the average global rating for a complaint.
+     * @param reclamationId the complaint UUID
+     * @return average global rating
+     */
     @Query("SELECT AVG(e.noteGlobale) FROM Evaluation e WHERE e.reclamation.id = :reclamationId")
     Double averageNoteGlobaleByReclamation(@Param("reclamationId") UUID reclamationId);
+    /**
+     * Finds evaluations by user ID (alternative method).
+     * @param evaluateurId the user UUID
+     * @return list of evaluations by the user
+     */
+    List<Evaluation> findByEvaluateur_Id(UUID evaluateurId);
 } 

@@ -12,6 +12,13 @@ import java.io.Serializable;
 
 /**
  * DTO for creating a new user.
+ * <p>
+ * Contains the information required to register a new user account.
+ * </p>
+ *
+ * @author Mohamed yahya jabrane
+ * @version 1.0
+ * @since 10/07/2025
  */
 @Data
 @Builder
@@ -25,7 +32,6 @@ public class UserCreateRequest implements Serializable {
     @JsonProperty("username")
     @NotBlank
     private String username;
-
     /**
      * Email of the user. Must be valid and not blank.
      */
@@ -33,7 +39,6 @@ public class UserCreateRequest implements Serializable {
     @Email
     @NotBlank
     private String email;
-
     /**
      * Password for the user account. Cannot be blank.
      */

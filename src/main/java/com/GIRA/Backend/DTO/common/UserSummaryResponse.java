@@ -10,37 +10,33 @@ import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * Lightweight DTO to represent a user in other DTOs.
- * Contains only essential user information without exposing sensitive data.
- * 
+ * DTO summarizing user information for embedding in other responses.
+ * <p>
+ * Used for lightweight user references in API responses (e.g., file uploads, comments).
+ * </p>
+ *
  * @author Mohamed yahya jabrane
  * @version 1.0
  * @since 10/07/2025
  */
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserSummaryResponse implements Serializable {
-
-    @Serial
     private static final long serialVersionUID = 1L;
-
     /**
-     * Unique identifier for the user.
+     * Unique identifier of the user.
      */
     @JsonProperty("id")
     private String id;
-
-    /**
-     * Full name of the user (combination of nom and prenom).
-     */
-    @JsonProperty("nomComplet")
-    private String nomComplet;
-
     /**
      * Email address of the user.
      */
     @JsonProperty("email")
     private String email;
+    /**
+     * Full name of the user.
+     */
+    @JsonProperty("nomComplet")
+    private String nomComplet;
 } 

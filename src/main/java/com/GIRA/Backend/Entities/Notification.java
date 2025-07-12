@@ -131,6 +131,13 @@ public class Notification extends BaseEntity {
         // TODO: Implement scheduling logic
     }
 
+    public void setStatut(Statut statut) {
+        this.statut = statut;
+    }
+    public void setDateLecture(LocalDateTime dateLecture) {
+        this.dateLecture = dateLecture;
+    }
+
     /**
      * Enum representing the type of notification.
      */

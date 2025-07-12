@@ -312,5 +312,17 @@ public class Reclamation extends BaseEntity {
         SOUMISE, EN_COURS, EN_ATTENTE_INFO, RESOLUE, FERMEE, ANNULEE
     }
 
+    public Statut getStatut() { return statut; }
+    public Priorite getPriorite() { return priorite; }
+    public Categorie getCategorie() { return categorie; }
+    public SousCategorie getSousCategorie() { return sousCategorie; }
+    public User getAgentAssigne() { return agentAssigne; }
+    public String getDescription() { return description; }
 
+    public void setStatut(Statut statut) { this.statut = statut; }
+    public void setPriorite(Priorite priorite) { this.priorite = priorite; }
+    public void setCategorie(Categorie categorie) { this.categorie = categorie; }
+    public void setSousCategorie(SousCategorie sousCategorie) { this.sousCategorie = sousCategorie; }
+    public void setAgentAssigne(User agentAssigne) { this.agentAssigne = agentAssigne; }
+    public void setDescription(String description) { this.description = description; }
 } 

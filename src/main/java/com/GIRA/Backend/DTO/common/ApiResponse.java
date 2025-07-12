@@ -50,7 +50,7 @@ public class ApiResponse<T> implements Serializable {
      * @return ApiResponse with success=true and the provided data
      */
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(true, "Operation successful", data);
+        return new ApiResponse<T>(true, "Operation successful", data);
     }
 
     /**
@@ -62,7 +62,7 @@ public class ApiResponse<T> implements Serializable {
      * @return ApiResponse with success=true, custom message and data
      */
     public static <T> ApiResponse<T> success(String message, T data) {
-        return new ApiResponse<>(true, message, data);
+        return new ApiResponse<T>(true, message, data);
     }
 
     /**
@@ -73,6 +73,6 @@ public class ApiResponse<T> implements Serializable {
      * @return ApiResponse with success=false and the error message
      */
     public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>(false, message, null);
+        return new ApiResponse<T>(false, message, null);
     }
 } 

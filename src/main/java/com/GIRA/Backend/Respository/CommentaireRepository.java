@@ -31,4 +31,6 @@ public interface CommentaireRepository extends JpaRepository<Commentaire, UUID> 
     // Advanced search by content (case-insensitive)
     @Query("SELECT c FROM Commentaire c WHERE LOWER(c.contenu) LIKE LOWER(CONCAT('%', :contenu, '%'))")
     List<Commentaire> findByContenuContainingIgnoreCase(@Param("contenu") String contenu);
+
+    List<Commentaire> findByAuteur_Id(UUID auteurId);
 } 
