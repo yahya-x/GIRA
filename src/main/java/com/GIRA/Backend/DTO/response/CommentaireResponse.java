@@ -12,9 +12,9 @@ import java.time.LocalDateTime;
 
 /**
  * DTO for comment responses.
- * Contains comment information with author details and metadata.
- * 
- * @author Mohamed yahya jabrane
+ * Contains information about a comment on a complaint.
+ *
+ * @author Mohamed Yahya Jabrane
  * @version 1.0
  * @since 10/07/2025
  */
@@ -39,31 +39,25 @@ public class CommentaireResponse implements Serializable {
     private String reclamationId;
 
     /**
-     * Author of the comment.
-     */
-    @JsonProperty("auteur")
-    private UserSummaryResponse auteur;
-
-    /**
      * Content of the comment.
      */
     @JsonProperty("contenu")
     private String contenu;
 
     /**
-     * Type of comment (PUBLIC, INTERNE, SYSTEME).
+     * Type of the comment (PUBLIC, INTERNE, SYSTEME).
      */
     @JsonProperty("type")
     private String type;
 
     /**
-     * When the comment was created.
+     * Date and time when the comment was created.
      */
     @JsonProperty("dateCreation")
     private LocalDateTime dateCreation;
 
     /**
-     * When the comment was last modified.
+     * Date and time when the comment was last modified.
      */
     @JsonProperty("dateModification")
     private LocalDateTime dateModification;
@@ -73,4 +67,22 @@ public class CommentaireResponse implements Serializable {
      */
     @JsonProperty("lu")
     private Boolean lu;
+
+    /**
+     * Date and time when the comment was marked as read.
+     */
+    @JsonProperty("dateMarkageLu")
+    private LocalDateTime dateMarkageLu;
+
+    /**
+     * ID of the user who wrote the comment.
+     */
+    @JsonProperty("auteurId")
+    private String auteurId;
+
+    /**
+     * ID of the user who last modified the comment.
+     */
+    @JsonProperty("modifiePar")
+    private String modifiePar;
 } 

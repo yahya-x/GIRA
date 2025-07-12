@@ -61,11 +61,7 @@ public class ReclamationCreateRequest implements Serializable {
     @JsonProperty("priorite")
     private String priorite;
 
-    /**
-     * Location information for the complaint (optional).
-     */
-    @JsonProperty("localisation")
-    private LocalisationRequest localisation;
+    
 
     /**
      * Custom fields for the complaint as key-value pairs (optional).
@@ -91,44 +87,5 @@ public class ReclamationCreateRequest implements Serializable {
     @JsonProperty("notifierParSMS")
     private Boolean notifierParSMS = false;
 
-    /**
-     * DTO for specifying the location of a complaint.
-     * <p>
-     * Contains latitude, longitude, address, and place name.
-     */
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class LocalisationRequest implements Serializable {
-        private static final long serialVersionUID = 1L;
-        /**
-         * Latitude of the location. Must be between -90 and 90.
-         */
-        @DecimalMin(value = "-90.0", message = "La latitude doit être comprise entre -90 et 90")
-        @DecimalMax(value = "90.0", message = "La latitude doit être comprise entre -90 et 90")
-        @JsonProperty("latitude")
-        private Double latitude;
-
-        /**
-         * Longitude of the location. Must be between -180 and 180.
-         */
-        @DecimalMin(value = "-180.0", message = "La longitude doit être comprise entre -180 et 180")
-        @DecimalMax(value = "180.0", message = "La longitude doit être comprise entre -180 et 180")
-        @JsonProperty("longitude")
-        private Double longitude;
-
-        /**
-         * Address of the location (optional, max 200 characters).
-         */
-        @Size(max = 200, message = "L'adresse ne peut pas dépasser 200 caractères")
-        @JsonProperty("adresse")
-        private String adresse;
-
-        /**
-         * Place name or location label (optional, max 100 characters).
-         */
-        @Size(max = 100, message = "Le lieu ne peut pas dépasser 100 caractères")
-        @JsonProperty("lieu")
-        private String lieu;
-    }
+   
 } 

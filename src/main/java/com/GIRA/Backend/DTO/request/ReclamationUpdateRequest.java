@@ -56,18 +56,8 @@ public class ReclamationUpdateRequest implements Serializable {
     @JsonProperty("agentAssigneId")
     private String agentAssigneId;
 
-    /**
-     * Location information for the complaint.
-     */
-    @JsonProperty("localisation")
-    private ReclamationCreateRequest.LocalisationRequest localisation;
 
-    /**
-     * Description of the location.
-     */
-    @Size(max = 255, message = "La description du lieu ne peut pas dépasser 255 caractères")
-    @JsonProperty("lieuDescription")
-    private String lieuDescription;
+
 
     /**
      * Specific fields required for the complaint category.

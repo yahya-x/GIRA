@@ -20,7 +20,7 @@ import java.util.*;
  * Each user is assigned a role and can submit or manage complaints (reclamations).
  * </p>
  *
- * @author [Your Name]
+ * @author Mohamed Yahya Jabrane
  * @since 1.0
  */
 @Entity

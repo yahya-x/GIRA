@@ -35,7 +35,6 @@ public class RoleResponse implements Serializable {
     /**
      * The name of the role.
      */
-    @JsonProperty("nom")
     private String nom;
 
     /**
