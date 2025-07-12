@@ -44,8 +44,14 @@ public class SousCategorie extends BaseEntity {
      * JSON configuration for required fields specific to this sub-category.
      * Example: '{"champ1":true,"champ2":false}'
      */
-    @Column(name = "champs_requis", columnDefinition = "TEXT")
+    @Column(name = "champs_requis", columnDefinition = "jsonb")
     private String champsRequis;
+
+    /**
+     * Display order for the sub-category (ordre_affichage in DB).
+     */
+    @Column(name = "ordre_affichage")
+    private Integer ordreAffichage;
 
     /**
      * Indicates whether the sub-category is active (default true).

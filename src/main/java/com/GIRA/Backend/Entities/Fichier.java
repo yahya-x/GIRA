@@ -34,12 +34,6 @@ public class Fichier extends BaseEntity {
     private String nomOriginal;
 
     /**
-     * Stored file name (not null).
-     */
-    @Column(name = "nom_stocke", nullable = false, length = 255)
-    private String nomStocke;
-
-    /**
      * Full file path (not null).
      */
     @Column(name = "chemin_complet", nullable = false, length = 500)
@@ -58,10 +52,10 @@ public class Fichier extends BaseEntity {
     private Long taille;
 
     /**
-     * File checksum (optional).
+     * File hash (checksum) for integrity, mapped to hash_fichier in DB.
      */
-    @Column(name = "checksum", length = 128)
-    private String checksum;
+    @Column(name = "hash_fichier", length = 128)
+    private String hashFichier;
 
     /**
      * Date and time when the file was uploaded (not null).

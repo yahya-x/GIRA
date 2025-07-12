@@ -41,11 +41,22 @@ public class Commentaire extends BaseEntity {
     private String contenu;
 
     /**
-     * Type of the comment (PUBLIC, INTERNE, SYSTEME).
+     * Date and time when the comment was created.
      */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, length = 20)
-    private Type type;
+    @Column(name = "date_creation")
+    private LocalDateTime dateCreation;
+
+    /**
+     * Indicates whether the comment is active (matches 'actif' in DB).
+     */
+    @Column(name = "actif", nullable = false)
+    private boolean actif = true;
+
+    /**
+     * Type of the comment (PUBLIC, INTERNE, SYSTEME) as string in DB.
+     */
+    @Column(name = "type", length = 20)
+    private String type;
 
     /**
      * Date and time when the comment was last modified.

@@ -41,13 +41,13 @@ public class HistoriqueResponse {
     private String action;
 
     /**
-     * Previous value (as JSON string, if applicable).
+     * Previous value (as JSONB string, if applicable).
      */
     @JsonProperty("ancienneValeur")
     private String ancienneValeur;
 
     /**
-     * New value (as JSON string, if applicable).
+     * New value (as JSONB string, if applicable).
      */
     @JsonProperty("nouvelleValeur")
     private String nouvelleValeur;

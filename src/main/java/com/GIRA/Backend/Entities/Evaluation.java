@@ -59,6 +59,18 @@ public class Evaluation extends BaseEntity {
     private Integer noteCommunication;
 
     /**
+     * Resolution rating (1-5).
+     */
+    @Column(name = "note_resolution")
+    private Integer noteResolution;
+
+    /**
+     * Indicates whether the evaluation is active (matches 'actif' in DB).
+     */
+    @Column(name = "actif", nullable = false)
+    private boolean actif = true;
+
+    /**
      * Evaluation comment.
      */
     @Column(name = "commentaire", columnDefinition = "TEXT")
@@ -69,6 +81,18 @@ public class Evaluation extends BaseEntity {
      */
     @Column(name = "date_evaluation", nullable = false)
     private LocalDateTime dateEvaluation;
+
+    /**
+     * Date and time when the evaluation was created.
+     */
+    @Column(name = "date_creation")
+    private LocalDateTime dateCreation;
+
+    /**
+     * Date and time when the evaluation was last modified.
+     */
+    @Column(name = "date_modification")
+    private LocalDateTime dateModification;
 
     /**
      * Indicates whether the user recommends the service.

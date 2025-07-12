@@ -73,9 +73,21 @@ public class Notification extends BaseEntity {
     private Reclamation reclamation;
 
     /**
-     * Additional metadata, stored as a JSON string.
+     * Date and time when the notification was created.
      */
-    @Column(name = "metadonnees", columnDefinition = "TEXT")
+    @Column(name = "date_creation")
+    private LocalDateTime dateCreation;
+
+    /**
+     * Additional context data, stored as JSONB in the database.
+     */
+    @Column(name = "donnees_contexte", columnDefinition = "jsonb")
+    private String donneesContexte;
+
+    /**
+     * Additional metadata, stored as JSONB in the database.
+     */
+    @Column(name = "metadonnees", columnDefinition = "jsonb")
     private String metadonnees;
 
     /**

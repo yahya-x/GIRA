@@ -74,20 +74,20 @@ public class User extends BaseEntity implements UserDetails {
     /**
      * Token used for email verification.
      */
-    @Column(name = "token_verification", length = 255)
+    @Column(name = "token_verification_email", length = 255)
     private String tokenVerification;
 
     /**
-     * Date and time when the email was verified.
+     * Token used for password reset.
      */
-    @Column(name = "date_verification")
-    private LocalDateTime dateVerification;
+    @Column(name = "token_reset_password", length = 255)
+    private String tokenResetPassword;
 
     /**
-     * User preferences, stored as a JSON string.
+     * User preferences, stored as JSONB in the database.
      * Example: '{"theme":"dark","notifications":true}'
      */
-    @Column(name = "preferences", columnDefinition = "TEXT")
+    @Column(name = "preferences", columnDefinition = "jsonb")
     private String preferences;
 
     /**
@@ -319,12 +319,12 @@ public class User extends BaseEntity implements UserDetails {
         this.tokenVerification = tokenVerification;
     }
 
-    public LocalDateTime getDateVerification() {
-        return dateVerification;
+    public String getTokenResetPassword() {
+        return tokenResetPassword;
     }
 
-    public void setDateVerification(LocalDateTime dateVerification) {
-        this.dateVerification = dateVerification;
+    public void setTokenResetPassword(String tokenResetPassword) {
+        this.tokenResetPassword = tokenResetPassword;
     }
 
     public String getPreferences() {

@@ -47,6 +47,18 @@ public class FeedbackService extends BaseEntity {
     private String localisation;
 
     /**
+     * Free-text description of the location.
+     */
+    @Column(name = "localisation_description", columnDefinition = "TEXT")
+    private String localisationDescription;
+
+    /**
+     * Indicates whether the feedback is visible.
+     */
+    @Column(name = "visible")
+    private Boolean visible;
+
+    /**
      * Rating (1-5).
      */
     @Column(name = "note", nullable = false)
@@ -82,6 +94,12 @@ public class FeedbackService extends BaseEntity {
      */
     @Column(name = "date_moderation")
     private LocalDateTime dateModeration;
+
+    /**
+     * Date and time when the feedback was last modified.
+     */
+    @Column(name = "date_modification")
+    private LocalDateTime dateModification;
 
     /**
      * Date and time when the feedback was created.

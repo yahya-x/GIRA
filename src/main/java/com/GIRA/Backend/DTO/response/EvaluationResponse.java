@@ -59,6 +59,30 @@ public class EvaluationResponse {
     private Integer noteCommunication;
 
     /**
+     * Resolution rating (1-5).
+     */
+    @JsonProperty("noteResolution")
+    private Integer noteResolution;
+
+    /**
+     * Indicates whether the evaluation is active.
+     */
+    @JsonProperty("actif")
+    private Boolean actif;
+
+    /**
+     * Date and time when the evaluation was created.
+     */
+    @JsonProperty("dateCreation")
+    private LocalDateTime dateCreation;
+
+    /**
+     * Date and time when the evaluation was last modified.
+     */
+    @JsonProperty("dateModification")
+    private LocalDateTime dateModification;
+
+    /**
      * Optional comment about the evaluation.
      */
     @JsonProperty("commentaire")

@@ -53,6 +53,12 @@ public class ConfigurationResponse {
     private LocalDateTime dateModification;
 
     /**
+     * Date and time when the configuration was created.
+     */
+    @JsonProperty("dateCreation")
+    private LocalDateTime dateCreation;
+
+    /**
      * User who last modified the configuration.
      */
     @JsonProperty("modifiePar")

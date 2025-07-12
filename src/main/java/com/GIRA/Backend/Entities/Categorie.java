@@ -59,10 +59,10 @@ public class Categorie extends BaseEntity {
     private boolean actif = true;
 
     /**
-     * Display order for the category.
+     * Display order for the category (ordre_affichage in DB).
      */
-    @Column(name = "ordre")
-    private Integer ordre;
+    @Column(name = "ordre_affichage")
+    private Integer ordreAffichage;
 
     /**
      * Parent category for hierarchy (nullable).

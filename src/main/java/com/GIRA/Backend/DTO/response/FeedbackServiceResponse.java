@@ -47,6 +47,18 @@ public class FeedbackServiceResponse {
     private String localisation;
 
     /**
+     * Free-text description of the location.
+     */
+    @JsonProperty("localisationDescription")
+    private String localisationDescription;
+
+    /**
+     * Indicates whether the feedback is visible.
+     */
+    @JsonProperty("visible")
+    private Boolean visible;
+
+    /**
      * Rating (1-5).
      */
     @JsonProperty("note")
@@ -87,4 +99,10 @@ public class FeedbackServiceResponse {
      */
     @JsonProperty("dateModeration")
     private LocalDateTime dateModeration;
+
+    /**
+     * Date and time when the feedback was last modified.
+     */
+    @JsonProperty("dateModification")
+    private LocalDateTime dateModification;
 } 

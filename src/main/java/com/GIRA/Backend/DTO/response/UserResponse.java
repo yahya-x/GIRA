@@ -84,7 +84,25 @@ public class UserResponse implements Serializable {
     private RoleResponse role;
 
     /**
-     * User preferences as key-value pairs.
+     * Token used for email verification.
+     */
+    @JsonProperty("tokenVerification")
+    private String tokenVerification;
+
+    /**
+     * Token used for password reset.
+     */
+    @JsonProperty("tokenResetPassword")
+    private String tokenResetPassword;
+
+    /**
+     * Date and time of the user's last login.
+     */
+    @JsonProperty("derniereConnexion")
+    private LocalDateTime derniereConnexion;
+
+    /**
+     * User preferences as key-value pairs (JSONB).
      */
     @JsonProperty("preferences")
     private Map<String, Object> preferences;
@@ -94,10 +112,4 @@ public class UserResponse implements Serializable {
      */
     @JsonProperty("nombreReclamations")
     private Integer nombreReclamations;
-
-    /**
-     * Date and time of the user's last login.
-     */
-    @JsonProperty("derniereConnexion")
-    private LocalDateTime derniereConnexion;
 } 
