@@ -41,15 +41,15 @@ public class Historique extends BaseEntity {
     private String action;
 
     /**
-     * Previous value (before the action), stored as JSONB in the database.
+     * Previous value (before the action), stored as JSON in the database.
      */
-    @Column(name = "ancienne_valeur", columnDefinition = "jsonb")
+    @Column(name = "ancienne_valeur", columnDefinition = "TEXT")
     private String ancienneValeur;
 
     /**
-     * New value (after the action), stored as JSONB in the database.
+     * New value (after the action), stored as JSON in the database.
      */
-    @Column(name = "nouvelle_valeur", columnDefinition = "jsonb")
+    @Column(name = "nouvelle_valeur", columnDefinition = "TEXT")
     private String nouvelleValeur;
 
     /**

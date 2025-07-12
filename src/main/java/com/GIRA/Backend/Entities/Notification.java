@@ -79,15 +79,15 @@ public class Notification extends BaseEntity {
     private LocalDateTime dateCreation;
 
     /**
-     * Additional context data, stored as JSONB in the database.
+     * Additional context data, stored as JSON in the database.
      */
-    @Column(name = "donnees_contexte", columnDefinition = "jsonb")
+    @Column(name = "donnees_contexte", columnDefinition = "TEXT")
     private String donneesContexte;
 
     /**
-     * Additional metadata, stored as JSONB in the database.
+     * Additional metadata, stored as JSON in the database.
      */
-    @Column(name = "metadonnees", columnDefinition = "jsonb")
+    @Column(name = "metadonnees", columnDefinition = "TEXT")
     private String metadonnees;
 
     /**

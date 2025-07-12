@@ -44,7 +44,7 @@ public class SousCategorie extends BaseEntity {
      * JSON configuration for required fields specific to this sub-category.
      * Example: '{"champ1":true,"champ2":false}'
      */
-    @Column(name = "champs_requis", columnDefinition = "jsonb")
+    @Column(name = "champs_requis", columnDefinition = "TEXT")
     private String champsRequis;
 
     /**

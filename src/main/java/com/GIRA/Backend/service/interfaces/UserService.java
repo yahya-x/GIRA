@@ -145,4 +145,9 @@ public interface UserService {
      * Finds users with the most complaints (paginated).
      */
     List<User> findUsersOrderByReclamationCount(Pageable pageable);
+
+    /**
+     * Finds a user by email.
+     */
+    java.util.Optional<User> findByEmail(String email);
 } 

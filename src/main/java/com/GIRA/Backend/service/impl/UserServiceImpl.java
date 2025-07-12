@@ -3,6 +3,7 @@ package com.GIRA.Backend.service.impl;
 import com.GIRA.Backend.service.interfaces.UserService;
 import com.GIRA.Backend.Respository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.GIRA.Backend.Entities.User;
 import java.time.LocalDateTime;
@@ -18,10 +19,12 @@ import org.springframework.data.domain.Pageable;
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -31,7 +34,8 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public User registerUser(User user) {
-        // TODO: Add password encoding, validation, etc.
+        // Encode password before saving
+        user.setMotDePasse(passwordEncoder.encode(user.getMotDePasse()));
         return userRepository.save(user);
     }
 
@@ -91,9 +95,8 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public User authenticate(String email, String password) {
-        // TODO: Add password encoding and secure comparison
         return userRepository.findByEmail(email)
-                .filter(u -> u.getMotDePasse().equals(password))
+                .filter(u -> passwordEncoder.matches(password, u.getMotDePasse()))
                 .orElse(null);
     }
 
@@ -263,5 +266,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> findUsersOrderByReclamationCount(Pageable pageable) {
         return userRepository.findUsersOrderByReclamationCount(pageable);
+    }
+
+    @Override
+    public java.util.Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 } 

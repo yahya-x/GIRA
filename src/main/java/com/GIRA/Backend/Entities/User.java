@@ -84,10 +84,10 @@ public class User extends BaseEntity implements UserDetails {
     private String tokenResetPassword;
 
     /**
-     * User preferences, stored as JSONB in the database.
+     * User preferences, stored as JSON in the database.
      * Example: '{"theme":"dark","notifications":true}'
      */
-    @Column(name = "preferences", columnDefinition = "jsonb")
+    @Column(name = "preferences", columnDefinition = "TEXT")
     private String preferences;
 
     /**
