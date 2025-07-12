@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface HistoriqueRepository extends JpaRepository<Historique, UUID> {
+public interface    HistoriqueRepository extends JpaRepository<Historique, UUID> {
 
     // Find history by complaint
     List<Historique> findByReclamation_Id(UUID reclamationId);

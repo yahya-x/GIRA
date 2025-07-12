@@ -15,7 +15,8 @@ import java.util.UUID;
  * DTO for creating a new complaint (reclamation) in the airport complaint system.
  * <p>
  * Contains all necessary information to submit a complaint, including category, title, description,
- * priority, location, custom fields, attached files, and notification preferences.
+ * location, custom fields, attached files, and notification preferences.
+ * Priority is determined by the system/admin based on category, content, and business rules.
  * Used for transferring complaint creation data from clients to the backend.
  */
 @Data
@@ -53,15 +54,16 @@ public class ReclamationCreateRequest implements Serializable {
     private String description;
 
     /**
-     * to check After
-     * Priority of the complaint. Required. Must be one of: BASSE, NORMALE, HAUTE, URGENTE.
+     * Geographical location (WKT or GeoJSON as String) - optional.
      */
-    @NotNull(message = "La priorité est obligatoire")
-    @Pattern(regexp = "^(BASSE|NORMALE|HAUTE|URGENTE)$", message = "La priorité doit être BASSE, NORMALE, HAUTE ou URGENTE")
-    @JsonProperty("priorite")
-    private String priorite;
+    @JsonProperty("localisation")
+    private String localisation;
 
-    
+    /**
+     * Free-text description of the location - optional.
+     */
+    @JsonProperty("lieuDescription")
+    private String lieuDescription;
 
     /**
      * Custom fields for the complaint as key-value pairs (optional).
@@ -86,6 +88,4 @@ public class ReclamationCreateRequest implements Serializable {
      */
     @JsonProperty("notifierParSMS")
     private Boolean notifierParSMS = false;
-
-   
 } 

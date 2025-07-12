@@ -133,7 +133,10 @@ public class Reclamation extends BaseEntity {
     /**
      * Default constructor.
      */
-    public Reclamation() {}
+    public Reclamation() {
+        // Set default status for new complaints
+        this.statut = Statut.SOUMISE;
+    }
 
     // ====== Business Logic Method Stubs ======
 
@@ -229,6 +232,68 @@ public class Reclamation extends BaseEntity {
      */
     public void fermer() {
         // TODO: Implement close logic
+    }
+
+    /**
+     * Automatically determines the priority based on business rules.
+     * Priority is calculated based on category, keywords in title/description,
+     * and other factors like location or user history.
+     *
+     * @return the calculated priority
+     */
+    public Priorite determinerPrioriteAutomatique() {
+        // Default priority
+        Priorite prioriteCalculee = Priorite.NORMALE;
+        
+        // Check category-based priority rules
+        if (categorie != null) {
+            String nomCategorie = categorie.getNom().toLowerCase();
+            
+            // High priority categories
+            if (nomCategorie.contains("sécurité") || nomCategorie.contains("securite") ||
+                nomCategorie.contains("urgence") || nomCategorie.contains("medical") ||
+                nomCategorie.contains("médical")) {
+                prioriteCalculee = Priorite.URGENTE;
+            }
+            // Medium-high priority categories
+            else if (nomCategorie.contains("retard") || nomCategorie.contains("annulation") ||
+                     nomCategorie.contains("vol") || nomCategorie.contains("bagage")) {
+                prioriteCalculee = Priorite.HAUTE;
+            }
+            // Low priority categories
+            else if (nomCategorie.contains("restauration") || nomCategorie.contains("commerce") ||
+                     nomCategorie.contains("boutique")) {
+                prioriteCalculee = Priorite.BASSE;
+            }
+        }
+        
+        // Check for urgent keywords in title and description
+        String contenuComplet = (titre + " " + description).toLowerCase();
+        if (contenuComplet.contains("urgent") || contenuComplet.contains("immédiat") ||
+            contenuComplet.contains("immediat") || contenuComplet.contains("danger") ||
+            contenuComplet.contains("accident") || contenuComplet.contains("blessé") ||
+            contenuComplet.contains("blesse") || contenuComplet.contains("malade")) {
+            prioriteCalculee = Priorite.URGENTE;
+        }
+        else if (contenuComplet.contains("important") || contenuComplet.contains("critique") ||
+                 contenuComplet.contains("problème") || contenuComplet.contains("probleme")) {
+            if (prioriteCalculee.ordinal() < Priorite.HAUTE.ordinal()) {
+                prioriteCalculee = Priorite.HAUTE;
+            }
+        }
+        
+        // Check user history (VIP users might get higher priority)
+        // TODO: Implement user priority logic based on user type/history
+        
+        return prioriteCalculee;
+    }
+
+    /**
+     * Sets the priority automatically based on business rules.
+     * This method should be called when creating a new complaint.
+     */
+    public void setPrioriteAutomatique() {
+        this.priorite = determinerPrioriteAutomatique();
     }
 
     // ====== Enums ======

@@ -13,6 +13,7 @@ import java.util.Map;
 /**
  * DTO for updating complaints.
  * Used for both user and agent updates with careful validation logic in service layer.
+ * Priority and status updates are restricted to admin/agent roles only.
  * 
  * @author Mohamed yahya jabrane
  * @version 1.0
@@ -39,25 +40,25 @@ public class ReclamationUpdateRequest implements Serializable {
     private String description;
 
     /**
-     * The priority level of the complaint.
+     * The priority level of the complaint (ADMIN/AGENT ONLY).
+     * Users cannot modify priority - it's determined by the system.
      */
     @JsonProperty("priorite")
     private String priorite;
 
     /**
-     * The status of the complaint (for agent updates).
+     * The status of the complaint (ADMIN/AGENT ONLY).
+     * Users cannot modify status - only admins/agents can update workflow status.
      */
     @JsonProperty("statut")
     private String statut;
 
     /**
-     * ID of the assigned agent (for agent updates).
+     * ID of the assigned agent (ADMIN/AGENT ONLY).
+     * Only admins can assign agents to complaints.
      */
     @JsonProperty("agentAssigneId")
     private String agentAssigneId;
-
-
-
 
     /**
      * Specific fields required for the complaint category.
