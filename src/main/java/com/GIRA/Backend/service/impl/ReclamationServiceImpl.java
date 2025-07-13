@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import com.GIRA.Backend.exception.ResourceNotFoundException;
 import com.GIRA.Backend.exception.AccessDeniedException;
 import com.GIRA.Backend.exception.BadRequestException;
+import com.GIRA.Backend.Respository.UserRepository;
 
 /**
  * Implementation of ReclamationService.
@@ -41,13 +42,15 @@ public class ReclamationServiceImpl implements ReclamationService {
     private final UserService userService;
     private final CategorieService categorieService;
     private final SousCategorieService sousCategorieService;
+    private final UserRepository userRepository;
 
     @Autowired
-    public ReclamationServiceImpl(ReclamationRepository reclamationRepository, UserService userService, CategorieService categorieService, SousCategorieService sousCategorieService) {
+    public ReclamationServiceImpl(ReclamationRepository reclamationRepository, UserService userService, CategorieService categorieService, SousCategorieService sousCategorieService, UserRepository userRepository) {
         this.reclamationRepository = reclamationRepository;
         this.userService = userService;
         this.categorieService = categorieService;
         this.sousCategorieService = sousCategorieService;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -84,20 +87,7 @@ public class ReclamationServiceImpl implements ReclamationService {
      * @param reclamation The updated complaint data
      * @return The updated complaint entity
      */
-    public Reclamation updateReclamation(UUID id, Reclamation reclamation) {
-        Optional<Reclamation> existingOpt = reclamationRepository.findById(id);
-        if (existingOpt.isEmpty()) return null;
-        Reclamation existing = existingOpt.get();
-        // TODO: Update only allowed fields
-        existing.setStatut(reclamation.getStatut());
-        existing.setPriorite(reclamation.getPriorite());
-        existing.setCategorie(reclamation.getCategorie());
-        existing.setSousCategorie(reclamation.getSousCategorie());
-        existing.setAgentAssigne(reclamation.getAgentAssigne());
-        existing.setDescription(reclamation.getDescription());
-        // ... add more fields as needed
-        return reclamationRepository.save(existing);
-    }
+
 
     /**
      * Finds complaints by user ID.
@@ -385,4 +375,6 @@ public class ReclamationServiceImpl implements ReclamationService {
         }
         reclamationRepository.deleteById(id);
     }
+
+
 } 

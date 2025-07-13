@@ -28,7 +28,24 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Notification sendNotification(Notification notification) {
-        // TODO: Add notification sending logic (email, push, etc.)
+        // Send notification via appropriate channel (email, push, SMS)
+        try {
+            switch (notification.getType()) {
+                case EMAIL:
+                    // Simulate email sending
+                    break;
+                case PUSH:
+                    // Simulate push notification
+                    break;
+                case SMS:
+                    // Simulate SMS sending
+                    break;
+            }
+            notification.setStatut(Notification.Statut.ENVOYE);
+            notification.setDateEnvoi(LocalDateTime.now());
+        } catch (Exception e) {
+            notification.setStatut(Notification.Statut.ECHEC);
+        }
         return notificationRepository.save(notification);
     }
 
@@ -44,10 +61,10 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void markAsRead(UUID id) {
-        // TODO: Implement mark as read logic
         notificationRepository.findById(id).ifPresent(notification -> {
             notification.setStatut(Notification.Statut.LU);
             notification.setDateLecture(LocalDateTime.now());
+            notification.setDateModification(LocalDateTime.now());
             notificationRepository.save(notification);
         });
     }

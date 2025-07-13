@@ -48,6 +48,14 @@ public class ApiErrorResponse implements Serializable {
     @JsonProperty("path")
     private String path;
 
+    /**
+     * Constructor for creating ApiErrorResponse with status, message, and path.
+     * Automatically sets timestamp to current time and error to null.
+     *
+     * @param status  HTTP status code
+     * @param message Human-readable error message
+     * @param path    Request path where error occurred
+     */
     public ApiErrorResponse(int status, String message, String path) {
         this.status = status;
         this.error = null;

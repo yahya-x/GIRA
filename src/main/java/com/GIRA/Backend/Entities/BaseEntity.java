@@ -42,7 +42,7 @@ public abstract class BaseEntity   {
      */
     @Column(name = "date_creation", nullable = false)
     @CreationTimestamp
-    private LocalDateTime dateCreation;
+    protected LocalDateTime dateCreation;
 
     /**
      * Timestamp indicating the last time the entity was modified.
@@ -50,14 +50,14 @@ public abstract class BaseEntity   {
      */
     @Column(name = "date_modification")
     @UpdateTimestamp
-    private LocalDateTime dateModification;
+    protected LocalDateTime dateModification;
 
     /**
      * Indicates whether the entity is active.
      * Default is {@code true} upon creation.
      */
     @Column(name = "actif" , nullable = false)
-    private boolean actif = true;
+    protected boolean actif = true;
 
     /**
      * Initializes audit fields before the entity is persisted.
@@ -81,6 +81,17 @@ public abstract class BaseEntity   {
         dateModification = LocalDateTime.now();
     }
 
-
-
+    // ====== Getters and Setters ======
+    
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    
+    public LocalDateTime getDateCreation() { return dateCreation; }
+    public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }
+    
+    public LocalDateTime getDateModification() { return dateModification; }
+    public void setDateModification(LocalDateTime dateModification) { this.dateModification = dateModification; }
+    
+    public boolean isActif() { return actif; }
+    public void setActif(boolean actif) { this.actif = actif; }
 }

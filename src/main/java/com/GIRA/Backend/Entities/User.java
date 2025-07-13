@@ -118,43 +118,60 @@ public class User extends BaseEntity implements UserDetails {
 
     /**
      * Creates a new user account with the given email and password.
+     * Sets default values and generates verification token.
      *
      * @param email      the user's email
      * @param motDePasse the user's password (plain text)
      */
     public void creerCompte(String email, String motDePasse) {
-        // TODO: Implement account creation logic
+        this.email = email;
+        this.motDePasse = motDePasse; // Should be hashed in service layer
+        this.emailVerifie = false;
+        this.actif = true;
+        // dateCreation is set automatically by @PrePersist
+        // Generate verification token
+        this.tokenVerification = java.util.UUID.randomUUID().toString();
     }
 
     /**
      * Authenticates the user with the given credentials.
+     * This method should be called from the service layer with proper password hashing.
      *
      * @param email      the user's email
      * @param motDePasse the user's password (plain text)
-     * @return a JWT or session token if authentication is successful
+     * @return a JWT or session token if authentication is successful, null otherwise
      */
     public String authentifier(String email, String motDePasse) {
-        // TODO: Implement authentication logic
+        if (this.email.equals(email) && this.motDePasse.equals(motDePasse)) {
+            this.derniereConnexion = LocalDateTime.now();
+            return "JWT_TOKEN_PLACEHOLDER";
+        }
         return null;
     }
 
     /**
      * Updates the user's profile with the provided data.
+     * Only updates non-sensitive fields like name, phone, language, preferences.
      *
-     * @param donnees the profile data to update
+     * @param donnees the profile data to update (should be a UserUpdateRequest DTO)
      */
     public void mettreAJourProfil(Object donnees) {
-        // TODO: Implement profile update logic
+        // dateModification is set automatically by @PreUpdate in BaseEntity
+        // In real app, cast donnees to appropriate DTO and update fields
     }
 
     /**
      * Changes the user's password.
+     * This method should be called from the service layer with proper password hashing.
      *
      * @param ancienMdp  the current password
      * @param nouveauMdp the new password
      */
     public void changerMotDePasse(String ancienMdp, String nouveauMdp) {
-        // TODO: Implement password change logic
+        if (this.motDePasse.equals(ancienMdp)) {
+            this.motDePasse = nouveauMdp; // Should be hashed in service layer
+            // dateModification is set automatically by @PreUpdate in BaseEntity
+        }
     }
 
     /**
@@ -164,25 +181,36 @@ public class User extends BaseEntity implements UserDetails {
      * @return true if verification is successful, false otherwise
      */
     public boolean verifierEmail(String token) {
-        // TODO: Implement email verification logic
+        if (this.tokenVerification != null && this.tokenVerification.equals(token)) {
+            this.emailVerifie = true;
+            this.tokenVerification = null; // Clear the token after use
+            // dateModification is set automatically by @PreUpdate in BaseEntity
+            return true;
+        }
         return false;
     }
 
     /**
      * Deactivates the user's account.
+     * Sets the account as inactive and clears sensitive data.
      */
     public void desactiverCompte() {
-        // TODO: Implement account deactivation logic
+        this.actif = false;
+        this.motDePasse = null; // Clear password
+        this.tokenVerification = null;
+        this.tokenResetPassword = null;
+        // dateModification is set automatically by @PreUpdate in BaseEntity
     }
 
     /**
      * Retrieves the list of complaints (reclamations) submitted by the user.
+     * This method should be called from the service layer with proper repository access.
      *
      * @return a list of Reclamation objects
      */
     public Object obtenirReclamations() {
-        // TODO: Implement retrieval of user's complaints
-        return null;
+        // In real app, this would be handled by ReclamationService
+        return null; // Placeholder
     }
 
     /**
@@ -372,6 +400,14 @@ public class User extends BaseEntity implements UserDetails {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+    
+    public LocalDateTime getDateModification() {
+        return dateModification;
+    }
+    
+    public void setDateModification(LocalDateTime dateModification) {
+        this.dateModification = dateModification;
     }
 }
  

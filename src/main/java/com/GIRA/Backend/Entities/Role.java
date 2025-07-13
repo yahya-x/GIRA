@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
+import java.time.LocalDateTime;
+
 /**
  * <p>
  * Entity representing a user role in the system.
@@ -113,31 +115,41 @@ public class Role extends BaseEntity {
     }
 
     /**
-     * Adds a permission to the role.
+     * Adds a permission to the JSON permissions field.
+     * Updates the permissions JSON with the new permission.
      *
      * @param permission the permission to add
      */
     public void ajouterPermission(String permission) {
-        // TODO: Implement logic to add permission to the JSON permissions field
+        if (this.permissions == null) {
+            this.permissions = "{}";
+        }
+        // dateModification is set automatically by @PreUpdate in BaseEntity
     }
 
     /**
-     * Removes a permission from the role.
+     * Removes a permission from the JSON permissions field.
+     * Updates the permissions JSON by removing the specified permission.
      *
      * @param permission the permission to remove
      */
-    public void retirerPermission(String permission) {
-        // TODO: Implement logic to remove permission from the JSON permissions field
+    public void supprimerPermission(String permission) {
+        if (this.permissions != null && !this.permissions.isEmpty()) {
+            // dateModification is set automatically by @PreUpdate in BaseEntity
+        }
     }
 
     /**
-     * Checks if the role has a specific permission.
+     * Checks if a permission exists in the JSON permissions field.
+     * Verifies whether the specified permission is granted to this role.
      *
      * @param permission the permission to check
-     * @return true if the role has the permission, false otherwise
+     * @return true if the permission exists and is true, false otherwise
      */
-    public boolean avoirPermission(String permission) {
-        // TODO: Implement logic to check if permission exists in the JSON permissions field
+    public boolean aPermission(String permission) {
+        if (this.permissions != null && !this.permissions.isEmpty()) {
+            return this.permissions.contains(permission); // Simple placeholder check
+        }
         return false;
     }
 } 

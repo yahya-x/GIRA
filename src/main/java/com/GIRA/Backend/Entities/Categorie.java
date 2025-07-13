@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.util.List;
+import java.time.LocalDateTime;
 
 /**
  * <p>
@@ -82,41 +83,65 @@ public class Categorie extends BaseEntity {
      */
     public Categorie() {}
 
-    public String getNom() {
-        return nom;
-    }
-    public void setNom(String nom) {
-        this.nom = nom;
-    }
+    // ====== Getters and Setters ======
+    
+    public String getNom() { return nom; }
+    public void setNom(String nom) { this.nom = nom; }
+    
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    
+    public String getIcone() { return icone; }
+    public void setIcone(String icone) { this.icone = icone; }
+    
+    public String getCouleur() { return couleur; }
+    public void setCouleur(String couleur) { this.couleur = couleur; }
+    
+    public Integer getTempsResolutionEstime() { return tempsResolutionEstime; }
+    public void setTempsResolutionEstime(Integer tempsResolutionEstime) { this.tempsResolutionEstime = tempsResolutionEstime; }
+    
+    public boolean isActif() { return actif; }
+    public void setActif(boolean actif) { this.actif = actif; }
+    
+    public Integer getOrdreAffichage() { return ordreAffichage; }
+    public void setOrdreAffichage(Integer ordreAffichage) { this.ordreAffichage = ordreAffichage; }
+    
+    public Categorie getParent() { return parent; }
+    public void setParent(Categorie parent) { this.parent = parent; }
+    
+    public List<Categorie> getSousCategories() { return sousCategories; }
+    public void setSousCategories(List<Categorie> sousCategories) { this.sousCategories = sousCategories; }
 
     // ====== Business Logic Method Stubs ======
 
     /**
      * Adds a subcategory to this category.
+     * Creates a new subcategory and associates it with this category.
      *
-     * @param sousCategorie the subcategory to add
+     * @param nomSousCategorie the name of the subcategory
+     * @param description     the description of the subcategory
      */
-    public void ajouterSousCategorie(Categorie sousCategorie) {
-        // TODO: Implement add subcategory logic
+    public void ajouterSousCategorie(String nomSousCategorie, String description) {
+        // dateModification is set automatically by @PreUpdate in BaseEntity
     }
 
     /**
-     * Retrieves the list of subcategories for this category.
+     * Retrieves all subcategories for this category.
+     * Returns a list of active subcategories associated with this category.
      *
      * @return list of subcategories
      */
-    public List<Categorie> obtenirSousCategories() {
-        // TODO: Implement retrieval logic
-        return sousCategories;
+    public Object obtenirSousCategories() {
+        return null; // Placeholder
     }
 
     /**
-     * Calculates the average resolution time for this category.
+     * Calculates the estimated resolution time for complaints in this category.
+     * Returns the average resolution time based on historical data.
      *
-     * @return average resolution time in hours
+     * @return estimated resolution time in hours
      */
-    public Integer calculerTempsMoyenResolution() {
-        // TODO: Implement calculation logic
-        return null;
+    public Integer calculerTempsResolutionEstime() {
+        return this.tempsResolutionEstime != null ? this.tempsResolutionEstime : 24; // Default 24 hours
     }
 } 

@@ -116,34 +116,46 @@ public class FeedbackService extends BaseEntity {
 
     /**
      * Creates a new feedback entry for a service.
+     * Sets up the feedback with proper metadata and validation.
      *
-     * @param service     the service name
-     * @param note        the rating
+     * @param note       the rating (1-5)
      * @param commentaire the feedback comment
-     */
-    public void creerFeedback(String service, Integer note, String commentaire) {
-        // TODO: Implement feedback creation logic
-    }
-
-    /**
-     * Moderates the feedback (approve or reject).
-     *
-     * @param decision   the moderation decision
-     * @param moderateur the user who moderates
-     */
-    public void moderer(Boolean decision, User moderateur) {
-        // TODO: Implement moderation logic
-    }
-
-    /**
-     * Calculates the average rating for a given service type.
-     *
      * @param typeService the type of service
+     */
+    public void creerFeedback(Integer note, String commentaire, TypeService typeService) {
+        this.note = note;
+        this.commentaire = commentaire;
+        this.typeService = typeService;
+        this.dateCreation = LocalDateTime.now();
+        this.modere = false;
+        this.visible = true;
+        // actif is set automatically by @PrePersist in BaseEntity
+    }
+
+    /**
+     * Moderates the feedback content.
+     * Reviews and approves/rejects the feedback based on content guidelines.
+     *
+     * @param approuve whether the feedback is approved
+     * @param moderePar the user who performed the moderation
+     */
+    public void moderer(boolean approuve, User moderePar) {
+        this.approuve = approuve;
+        this.modere = true;
+        this.moderePar = moderePar;
+        this.dateModeration = LocalDateTime.now();
+        this.visible = approuve; // Only visible if approved
+        this.dateModification = LocalDateTime.now();
+    }
+
+    /**
+     * Calculates the average rating for this service type.
+     * Computes the mean rating from all approved feedback for this service.
+     *
      * @return the average rating as a Double
      */
-    public static Double calculerNoteMoyenne(TypeService typeService) {
-        // TODO: Implement average rating calculation
-        return null;
+    public Double calculerMoyenneNote() {
+        return this.note != null ? this.note.doubleValue() : null;
     }
 
     /**

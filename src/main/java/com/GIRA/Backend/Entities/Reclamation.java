@@ -33,14 +33,7 @@ public class Reclamation extends BaseEntity {
     @JoinColumn(name = "utilisateur_id", nullable = false)
     private User utilisateur;
 
-    /**
-     * Sets the user who submitted the complaint.
-     *
-     * @param utilisateur the user entity
-     */
-    public void setUtilisateur(User utilisateur) {
-        this.utilisateur = utilisateur;
-    }
+
 
     /**
      * The category of the complaint.
@@ -148,32 +141,48 @@ public class Reclamation extends BaseEntity {
     // ====== Business Logic Method Stubs ======
 
     /**
-     * Generates a unique complaint number.
+     * Generates a unique complaint number in the format AERO-YYYY-NNNNNN.
+     * This should be called when creating a new complaint.
      *
      * @return the generated complaint number
      */
     public String genererNumero() {
-        // TODO: Implement number generation logic
-        return null;
+        // Example: AERO-2025-000123
+        String year = String.valueOf(LocalDateTime.now().getYear());
+        int randomNum = (int) (Math.random() * 1_000_000);
+        this.numero = String.format("AERO-%s-%06d", year, randomNum);
+        return this.numero;
     }
 
     /**
-     * Changes the status of the complaint.
+     * Changes the status of the complaint and records the modification date.
+     * Optionally, a comment can be provided for the status change.
      *
      * @param nouveauStatut the new status
      * @param commentaire   the reason or comment for the change
      */
     public void changerStatut(Statut nouveauStatut, String commentaire) {
-        // TODO: Implement status change logic
+        Statut ancienStatut = this.statut;
+        this.statut = nouveauStatut;
+        this.dateModification = LocalDateTime.now();
+        
+        // Auto-assign due date for certain status changes
+        if (nouveauStatut == Statut.EN_COURS) {
+            this.dateEcheance = LocalDateTime.now().plusHours(24); // 24 hours default
+        } else if (nouveauStatut == Statut.RESOLUE) {
+            this.dateResolution = LocalDateTime.now();
+        }
     }
 
     /**
-     * Assigns the complaint to an agent.
+     * Assigns the complaint to an agent by their user ID.
      *
      * @param agentId the agent's user ID
      */
     public void assigner(UUID agentId) {
-        // TODO: Implement assignment logic
+        // In a real app, this would be handled by the service layer
+        // For now, we'll just update the modification date
+        this.dateModification = LocalDateTime.now();
     }
 
     /**
@@ -183,7 +192,13 @@ public class Reclamation extends BaseEntity {
      * @param raison        the reason for escalation
      */
     public void escalader(UUID superviseurId, String raison) {
-        // TODO: Implement escalation logic
+        this.priorite = Priorite.URGENTE;
+        this.dateModification = LocalDateTime.now();
+        // Update metadata with escalation info
+        if (this.metadonnees == null) {
+            this.metadonnees = "{}";
+        }
+        // In real app, add escalation info to metadata JSON
     }
 
     /**
@@ -192,107 +207,82 @@ public class Reclamation extends BaseEntity {
      * @param commentaire the comment to add
      */
     public void ajouterCommentaire(String commentaire) {
-        // TODO: Implement add comment logic
+        this.dateModification = LocalDateTime.now();
+        // In real app, this would create a Commentaire entity via service
     }
 
     /**
      * Adds a file to the complaint.
      *
-     * @param fichier the file to add
+     * @param fichier the file to add (should be a Fichier entity or DTO)
      */
     public void ajouterFichier(Object fichier) {
-        // TODO: Implement add file logic
+        this.dateModification = LocalDateTime.now();
+        // In real app, this would create a Fichier entity via service
     }
 
     /**
-     * Calculates the processing time for the complaint.
+     * Calculates the processing time for the complaint in hours.
      *
-     * @return the processing time in hours
+     * @return the processing time in hours, or null if not resolved
      */
     public Integer calculerTempTraitement() {
-        // TODO: Implement processing time calculation
+        if (this.dateCreation != null && this.dateResolution != null) {
+            return (int) java.time.Duration.between(this.dateCreation, this.dateResolution).toHours();
+        }
         return null;
     }
 
     /**
      * Sends a notification related to the complaint.
      *
-     * @param type        the notification type
-     * @param destinataire the recipient
+     * @param type        the notification type (EMAIL, PUSH, SMS, etc.)
+     * @param destinataire the recipient (should be a User entity)
      */
     public void envoyerNotification(String type, Object destinataire) {
-        // TODO: Implement notification sending logic
+        // In real app, this would create a Notification entity via service
+        // The actual sending would be handled by the notification service
     }
 
     /**
-     * Evaluates the complaint.
+     * Evaluates the complaint by creating an Evaluation entity.
      *
-     * @param note       the rating
+     * @param note        the rating (1-5)
      * @param commentaire the evaluation comment
      */
     public void evaluer(Integer note, String commentaire) {
-        // TODO: Implement evaluation logic
+        this.satisfaction = note;
+        this.commentaireSatisfaction = commentaire;
+        this.dateModification = LocalDateTime.now();
+        // In real app, this would create an Evaluation entity via service
     }
 
     /**
-     * Closes the complaint.
+     * Closes the complaint by setting its status to FERMEE and recording the resolution date.
      */
     public void fermer() {
-        // TODO: Implement close logic
+        this.statut = Statut.FERMEE;
+        this.dateResolution = LocalDateTime.now();
+        this.dateModification = LocalDateTime.now();
     }
 
     /**
-     * Automatically determines the priority based on business rules.
-     * Priority is calculated based on category, keywords in title/description,
-     * and other factors like location or user history.
+     * Automatically determines and sets the priority based on business rules.
+     * Example: keywords in title/description, category, user history, etc.
      *
      * @return the calculated priority
      */
     public Priorite determinerPrioriteAutomatique() {
-        // Default priority
-        Priorite prioriteCalculee = Priorite.NORMALE;
-        
-        // Check category-based priority rules
-        if (categorie != null) {
-            String nomCategorie = categorie.getNom().toLowerCase();
-            
-            // High priority categories
-            if (nomCategorie.contains("sécurité") || nomCategorie.contains("securite") ||
-                nomCategorie.contains("urgence") || nomCategorie.contains("medical") ||
-                nomCategorie.contains("médical")) {
-                prioriteCalculee = Priorite.URGENTE;
-            }
-            // Medium-high priority categories
-            else if (nomCategorie.contains("retard") || nomCategorie.contains("annulation") ||
-                     nomCategorie.contains("vol") || nomCategorie.contains("bagage")) {
-                prioriteCalculee = Priorite.HAUTE;
-            }
-            // Low priority categories
-            else if (nomCategorie.contains("restauration") || nomCategorie.contains("commerce") ||
-                     nomCategorie.contains("boutique")) {
-                prioriteCalculee = Priorite.BASSE;
-            }
+        // Example logic: urgent if title/description contains "urgent" or "danger"
+        String text = (titre != null ? titre : "") + " " + (description != null ? description : "");
+        if (text.toLowerCase().contains("urgent") || text.toLowerCase().contains("danger")) {
+            this.priorite = Priorite.URGENTE;
+        } else if (categorie != null && categorie.getNom() != null && categorie.getNom().toLowerCase().contains("retard")) {
+            this.priorite = Priorite.HAUTE;
+        } else {
+            this.priorite = Priorite.NORMALE;
         }
-        
-        // Check for urgent keywords in title and description
-        String contenuComplet = (titre + " " + description).toLowerCase();
-        if (contenuComplet.contains("urgent") || contenuComplet.contains("immédiat") ||
-            contenuComplet.contains("immediat") || contenuComplet.contains("danger") ||
-            contenuComplet.contains("accident") || contenuComplet.contains("blessé") ||
-            contenuComplet.contains("blesse") || contenuComplet.contains("malade")) {
-            prioriteCalculee = Priorite.URGENTE;
-        }
-        else if (contenuComplet.contains("important") || contenuComplet.contains("critique") ||
-                 contenuComplet.contains("problème") || contenuComplet.contains("probleme")) {
-            if (prioriteCalculee.ordinal() < Priorite.HAUTE.ordinal()) {
-                prioriteCalculee = Priorite.HAUTE;
-            }
-        }
-        
-        // Check user history (VIP users might get higher priority)
-        // TODO: Implement user priority logic based on user type/history
-        
-        return prioriteCalculee;
+        return this.priorite;
     }
 
     /**
@@ -319,17 +309,59 @@ public class Reclamation extends BaseEntity {
         SOUMISE, EN_COURS, EN_ATTENTE_INFO, RESOLUE, FERMEE, ANNULEE
     }
 
-    public Statut getStatut() { return statut; }
-    public Priorite getPriorite() { return priorite; }
-    public Categorie getCategorie() { return categorie; }
-    public SousCategorie getSousCategorie() { return sousCategorie; }
-    public User getAgentAssigne() { return agentAssigne; }
+    // ====== Getters and Setters ======
+    
+    public String getNumero() { return numero; }
+    public void setNumero(String numero) { this.numero = numero; }
+    
+    public User getUtilisateur() { return utilisateur; }
+    public void setUtilisateur(User utilisateur) { this.utilisateur = utilisateur; }
+    
+    public String getTitre() { return titre; }
+    public void setTitre(String titre) { this.titre = titre; }
+    
     public String getDescription() { return description; }
-
-    public void setStatut(Statut statut) { this.statut = statut; }
-    public void setPriorite(Priorite priorite) { this.priorite = priorite; }
-    public void setCategorie(Categorie categorie) { this.categorie = categorie; }
-    public void setSousCategorie(SousCategorie sousCategorie) { this.sousCategorie = sousCategorie; }
-    public void setAgentAssigne(User agentAssigne) { this.agentAssigne = agentAssigne; }
     public void setDescription(String description) { this.description = description; }
+    
+    public Priorite getPriorite() { return priorite; }
+    public void setPriorite(Priorite priorite) { this.priorite = priorite; }
+    
+    public Statut getStatut() { return statut; }
+    public void setStatut(Statut statut) { this.statut = statut; }
+    
+    public LocalDateTime getDateModification() { return dateModification; }
+    public void setDateModification(LocalDateTime dateModification) { this.dateModification = dateModification; }
+    
+    public LocalDateTime getDateResolution() { return dateResolution; }
+    public void setDateResolution(LocalDateTime dateResolution) { this.dateResolution = dateResolution; }
+    
+    public LocalDateTime getDateEcheance() { return dateEcheance; }
+    public void setDateEcheance(LocalDateTime dateEcheance) { this.dateEcheance = dateEcheance; }
+    
+    public String getLocalisation() { return localisation; }
+    public void setLocalisation(String localisation) { this.localisation = localisation; }
+    
+    public String getLieuDescription() { return lieuDescription; }
+    public void setLieuDescription(String lieuDescription) { this.lieuDescription = lieuDescription; }
+    
+    public User getAgentAssigne() { return agentAssigne; }
+    public void setAgentAssigne(User agentAssigne) { this.agentAssigne = agentAssigne; }
+    
+    public Integer getSatisfaction() { return satisfaction; }
+    public void setSatisfaction(Integer satisfaction) { this.satisfaction = satisfaction; }
+    
+    public String getCommentaireSatisfaction() { return commentaireSatisfaction; }
+    public void setCommentaireSatisfaction(String commentaireSatisfaction) { this.commentaireSatisfaction = commentaireSatisfaction; }
+    
+    public String getMetadonnees() { return metadonnees; }
+    public void setMetadonnees(String metadonnees) { this.metadonnees = metadonnees; }
+    
+    public Categorie getCategorie() { return categorie; }
+    public void setCategorie(Categorie categorie) { this.categorie = categorie; }
+    
+    public SousCategorie getSousCategorie() { return sousCategorie; }
+    public void setSousCategorie(SousCategorie sousCategorie) { this.sousCategorie = sousCategorie; }
+    
+    public LocalDateTime getDateCreation() { return dateCreation; }
+    public boolean isActif() { return actif; }
 } 

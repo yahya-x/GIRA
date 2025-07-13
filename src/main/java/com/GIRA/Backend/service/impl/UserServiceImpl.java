@@ -66,16 +66,18 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public User updateUser(UUID id, User user) {
-        User existing = userRepository.findById(id).orElse(null);
-        if (existing == null) return null;
-        // TODO: Update only allowed fields
-        existing.setNom(user.getNom());
-        existing.setPrenom(user.getPrenom());
-        existing.setTelephone(user.getTelephone());
-        existing.setLangue(user.getLangue());
-        existing.setPreferences(user.getPreferences());
-        // ... add more fields as needed
-        return userRepository.save(existing);
+        User existingUser = userRepository.findById(id).orElse(null);
+        if (existingUser != null) {
+            // Update only allowed fields (non-sensitive data)
+            existingUser.setNom(user.getNom());
+            existingUser.setPrenom(user.getPrenom());
+            existingUser.setTelephone(user.getTelephone());
+            existingUser.setLangue(user.getLangue());
+            existingUser.setPreferences(user.getPreferences());
+            existingUser.setDateModification(LocalDateTime.now());
+            return userRepository.save(existingUser);
+        }
+        return null;
     }
 
     /**
@@ -106,12 +108,14 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public void resetPassword(String email) {
-        // TODO: Generate token, send email, etc.
-        // Example: set tokenResetPassword and save
-        userRepository.findByEmail(email).ifPresent(user -> {
-            user.setTokenResetPassword(UUID.randomUUID().toString());
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user != null) {
+            // Generate reset token and send email
+            String resetToken = java.util.UUID.randomUUID().toString();
+            user.setTokenResetPassword(resetToken);
+            user.setDateModification(LocalDateTime.now());
             userRepository.save(user);
-        });
+        }
     }
 
     /**

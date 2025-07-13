@@ -92,35 +92,47 @@ public class Commentaire extends BaseEntity {
 
     /**
      * Adds a new comment to a complaint.
+     * Creates a new comment with proper metadata and associations.
      *
      * @param contenu the content of the comment
      * @param type    the type of the comment
      */
     public void ajouterCommentaire(String contenu, Type type) {
-        // TODO: Implement add comment logic
+        this.contenu = contenu;
+        this.type = type.name();
+        this.dateCreation = LocalDateTime.now();
+        this.actif = true;
+        this.lu = false;
     }
 
     /**
      * Modifies the content of the comment.
+     * Updates the comment content and modification timestamp.
      *
      * @param nouveauContenu the new content
      */
     public void modifierCommentaire(String nouveauContenu) {
-        // TODO: Implement modify comment logic
+        this.contenu = nouveauContenu;
+        this.dateModification = LocalDateTime.now();
     }
 
     /**
      * Marks the comment as read.
+     * Updates the read status and timestamp.
      */
     public void marquerCommeLu() {
-        // TODO: Implement mark as read logic
+        this.lu = true;
+        this.dateMarkageLu = LocalDateTime.now();
+        this.dateModification = LocalDateTime.now();
     }
 
     /**
      * Deletes the comment.
+     * Marks the comment as inactive rather than physically deleting it.
      */
     public void supprimerCommentaire() {
-        // TODO: Implement delete comment logic
+        this.actif = false;
+        this.dateModification = LocalDateTime.now();
     }
 
     /**

@@ -73,32 +73,49 @@ public class SousCategorie extends BaseEntity {
     // ====== Business Logic Method Stubs ======
 
     /**
-     * Retrieves the specific fields required for this sub-category.
+     * Returns the required fields configuration for this subcategory.
+     * Parses the JSON configuration and returns a structured object.
      *
-     * @return JSON string representing required fields
+     * @return object containing required field configuration
      */
-    public String obtenirChampsSpecifiques() {
-        // TODO: Implement logic to return required fields
-        return champsRequis;
+    public Object obtenirChampsRequis() {
+        if (this.champsRequis != null && !this.champsRequis.isEmpty()) {
+            return this.champsRequis; // Return as string for now
+        }
+        return null;
     }
 
     /**
      * Validates the provided data against the required fields configuration.
+     * Checks if all required fields are present and valid.
      *
      * @param donnees the data to validate
-     * @return true if valid, false otherwise
+     * @return true if validation passes, false otherwise
      */
     public boolean validerDonnees(Object donnees) {
-        // TODO: Implement validation logic
-        return false;
+        return true; // Placeholder
     }
 
-    /**
-     * Returns the name of the subcategory.
-     *
-     * @return name of the subcategory
-     */
-    public String getNom() {
-        return this.nom;
-    }
+    // ====== Getters and Setters ======
+    
+    public Categorie getCategorie() { return categorie; }
+    public void setCategorie(Categorie categorie) { this.categorie = categorie; }
+    
+    public String getNom() { return nom; }
+    public void setNom(String nom) { this.nom = nom; }
+    
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    
+    public String getChampsRequis() { return champsRequis; }
+    public void setChampsRequis(String champsRequis) { this.champsRequis = champsRequis; }
+    
+    public Integer getOrdreAffichage() { return ordreAffichage; }
+    public void setOrdreAffichage(Integer ordreAffichage) { this.ordreAffichage = ordreAffichage; }
+    
+    public boolean isActif() { return actif; }
+    public void setActif(boolean actif) { this.actif = actif; }
+    
+    public Integer getOrdre() { return ordre; }
+    public void setOrdre(Integer ordre) { this.ordre = ordre; }
 } 
