@@ -26,23 +26,14 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationEntryPoint.class);
 
+    /**
+     * Handles authentication errors and returns a standardized API error response.
+     */
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response,
-                        AuthenticationException authException) throws IOException, ServletException {
-        
-        logger.error("Unauthorized error: {}", authException.getMessage());
-
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
+        ApiErrorResponse errorResponse = new ApiErrorResponse(401, "Unauthorized", request.getRequestURI());
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-
-        ApiErrorResponse errorResponse = new ApiErrorResponse();
-        errorResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        errorResponse.setError("Unauthorized");
-        errorResponse.setMessage("Access denied. Please provide valid authentication credentials.");
-        errorResponse.setTimestamp(Instant.now());
-        errorResponse.setPath(request.getRequestURI());
-
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(response.getOutputStream(), errorResponse);
+        response.setContentType("application/json");
+        response.getWriter().write(new ObjectMapper().writeValueAsString(errorResponse));
     }
 } 

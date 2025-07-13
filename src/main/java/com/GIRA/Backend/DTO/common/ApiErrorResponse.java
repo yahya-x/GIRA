@@ -47,4 +47,12 @@ public class ApiErrorResponse implements Serializable {
      */
     @JsonProperty("path")
     private String path;
+
+    public ApiErrorResponse(int status, String message, String path) {
+        this.status = status;
+        this.error = null;
+        this.message = message;
+        this.timestamp = Instant.now();
+        this.path = path;
+    }
 } 

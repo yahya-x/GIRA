@@ -8,10 +8,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * <p>
  * Entity representing a complaint (reclamation) submitted by a user.
  * Stores all details, status, and relationships for the complaint lifecycle.
- * </p>
  *
  * @author Mohamed Yahya Jabrane
  * @since 1.0
@@ -34,6 +32,15 @@ public class Reclamation extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "utilisateur_id", nullable = false)
     private User utilisateur;
+
+    /**
+     * Sets the user who submitted the complaint.
+     *
+     * @param utilisateur the user entity
+     */
+    public void setUtilisateur(User utilisateur) {
+        this.utilisateur = utilisateur;
+    }
 
     /**
      * The category of the complaint.

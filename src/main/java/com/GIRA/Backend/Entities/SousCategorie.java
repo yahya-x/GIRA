@@ -92,4 +92,13 @@ public class SousCategorie extends BaseEntity {
         // TODO: Implement validation logic
         return false;
     }
+
+    /**
+     * Returns the name of the subcategory.
+     *
+     * @return name of the subcategory
+     */
+    public String getNom() {
+        return this.nom;
+    }
 } 

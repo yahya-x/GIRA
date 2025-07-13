@@ -13,6 +13,23 @@ import java.util.UUID;
 import com.GIRA.Backend.Entities.Reclamation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.GIRA.Backend.service.interfaces.UserService;
+import com.GIRA.Backend.service.interfaces.CategorieService;
+import com.GIRA.Backend.service.interfaces.SousCategorieService;
+import com.GIRA.Backend.Entities.User;
+import com.GIRA.Backend.Entities.Categorie;
+import com.GIRA.Backend.Entities.SousCategorie;
+import com.GIRA.Backend.mapper.ReclamationMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.GIRA.Backend.security.UserPrincipal;
+import com.GIRA.Backend.DTO.request.ReclamationCreateRequest;
+import com.GIRA.Backend.DTO.request.ReclamationUpdateRequest;
+import com.GIRA.Backend.DTO.response.ReclamationResponse;
+import com.GIRA.Backend.DTO.response.ReclamationListResponse;
+import java.util.stream.Collectors;
+import com.GIRA.Backend.exception.ResourceNotFoundException;
+import com.GIRA.Backend.exception.AccessDeniedException;
+import com.GIRA.Backend.exception.BadRequestException;
 
 /**
  * Implementation of ReclamationService.
@@ -21,10 +38,16 @@ import org.springframework.data.domain.Pageable;
 @Service
 public class ReclamationServiceImpl implements ReclamationService {
     private final ReclamationRepository reclamationRepository;
+    private final UserService userService;
+    private final CategorieService categorieService;
+    private final SousCategorieService sousCategorieService;
 
     @Autowired
-    public ReclamationServiceImpl(ReclamationRepository reclamationRepository) {
+    public ReclamationServiceImpl(ReclamationRepository reclamationRepository, UserService userService, CategorieService categorieService, SousCategorieService sousCategorieService) {
         this.reclamationRepository = reclamationRepository;
+        this.userService = userService;
+        this.categorieService = categorieService;
+        this.sousCategorieService = sousCategorieService;
     }
 
     /**
@@ -32,7 +55,6 @@ public class ReclamationServiceImpl implements ReclamationService {
      * @param reclamation The complaint entity to create
      * @return The created complaint entity
      */
-    @Override
     public Reclamation createReclamation(Reclamation reclamation) {
         return reclamationRepository.save(reclamation);
     }
@@ -62,7 +84,6 @@ public class ReclamationServiceImpl implements ReclamationService {
      * @param reclamation The updated complaint data
      * @return The updated complaint entity
      */
-    @Override
     public Reclamation updateReclamation(UUID id, Reclamation reclamation) {
         Optional<Reclamation> existingOpt = reclamationRepository.findById(id);
         if (existingOpt.isEmpty()) return null;
@@ -76,15 +97,6 @@ public class ReclamationServiceImpl implements ReclamationService {
         existing.setDescription(reclamation.getDescription());
         // ... add more fields as needed
         return reclamationRepository.save(existing);
-    }
-
-    /**
-     * Deletes a complaint by ID.
-     * @param id The complaint UUID
-     */
-    @Override
-    public void deleteReclamation(UUID id) {
-        reclamationRepository.deleteById(id);
     }
 
     /**
@@ -230,5 +242,147 @@ public class ReclamationServiceImpl implements ReclamationService {
     @Override
     public List<Object[]> countByStatutGroup() {
         return reclamationRepository.countByStatutGroup();
+    }
+
+    // === DTO-based methods for controller ===
+    /**
+     * Creates a new complaint (reclamation) for the currently authenticated user.
+     * Maps the request DTO to an entity, performs category and subcategory lookups,
+     * and saves the complaint. Returns a response DTO with the created complaint's details.
+     *
+     * @param request DTO containing complaint creation data
+     * @return Response DTO with created complaint details
+     * @throws RuntimeException if the category is not found
+     */
+    @Override
+    public ReclamationResponse createReclamation(ReclamationCreateRequest request) {
+        UserPrincipal userPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserById(userPrincipal.getId());
+        Categorie categorie = categorieService.getCategorieById(request.getCategorieId())
+            .orElseThrow(() -> new ResourceNotFoundException("Catégorie non trouvée"));
+        SousCategorie sousCategorie = null;
+        if (request.getSousCategorieId() != null) {
+            sousCategorie = sousCategorieService.getSousCategorieById(request.getSousCategorieId()).orElse(null);
+        }
+        Reclamation reclamation = ReclamationMapper.fromCreateRequest(request, user, categorie, sousCategorie);
+        Reclamation saved = reclamationRepository.save(reclamation);
+        return ReclamationMapper.toResponse(saved);
+    }
+
+    /**
+     * Retrieves a list of complaints for the currently authenticated user.
+     * Admins receive all complaints, agents receive those assigned to them,
+     * and users receive only their own complaints. Returns a list of concise response DTOs.
+     *
+     * @return List of complaint list response DTOs
+     */
+    @Override
+    public java.util.List<ReclamationListResponse> getReclamationsForCurrentUser() {
+        UserPrincipal userPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserById(userPrincipal.getId());
+        List<Reclamation> reclamations;
+        String role = userPrincipal.getRole();
+        if ("ADMIN".equals(role)) {
+            reclamations = reclamationRepository.findAll();
+        } else if ("AGENT".equals(role)) {
+            reclamations = reclamationRepository.findByAgentAssigne_Id(user.getId());
+        } else {
+            reclamations = reclamationRepository.findByUtilisateur_Id(user.getId());
+        }
+        return reclamations.stream().map(ReclamationMapper::toListResponse).collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieves a specific complaint by its ID for the currently authenticated user.
+     * Admins can access all complaints, agents can access those assigned to them,
+     * and users can access only their own complaints. Returns a detailed response DTO.
+     *
+     * @param id UUID of the complaint
+     * @return Response DTO with complaint details
+     * @throws RuntimeException if the complaint is not found or access is denied
+     */
+    @Override
+    public ReclamationResponse getReclamationByIdForCurrentUser(java.util.UUID id) {
+        UserPrincipal userPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserById(userPrincipal.getId());
+        String role = userPrincipal.getRole();
+        Reclamation reclamation = reclamationRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Reclamation non trouvée"));
+        if ("ADMIN".equals(role)) {
+            return ReclamationMapper.toResponse(reclamation);
+        } else if ("AGENT".equals(role)) {
+            if (reclamation.getAgentAssigne() != null && reclamation.getAgentAssigne().getId().equals(user.getId())) {
+                return ReclamationMapper.toResponse(reclamation);
+            }
+            throw new AccessDeniedException("Accès refusé");
+        } else {
+            if (reclamation.getUtilisateur() != null && reclamation.getUtilisateur().getId().equals(user.getId())) {
+                return ReclamationMapper.toResponse(reclamation);
+            }
+            throw new AccessDeniedException("Accès refusé");
+        }
+    }
+
+    /**
+     * Updates an existing complaint by its ID. Only agents and admins are authorized to update complaints.
+     * Updates allowed fields based on the request DTO and saves the changes. Returns a response DTO with updated details.
+     *
+     * @param id UUID of the complaint to update
+     * @param request DTO containing updated complaint data
+     * @return Response DTO with updated complaint details
+     * @throws RuntimeException if the complaint is not found or access is denied
+     */
+    @Override
+    public ReclamationResponse updateReclamation(java.util.UUID id, ReclamationUpdateRequest request) {
+        UserPrincipal userPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserById(userPrincipal.getId());
+        String role = userPrincipal.getRole();
+        Reclamation reclamation = reclamationRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Reclamation non trouvée"));
+        if (!"ADMIN".equals(role) && !"AGENT".equals(role)) {
+            throw new AccessDeniedException("Accès refusé");
+        }
+        if (request.getTitre() != null) reclamation.setTitre(request.getTitre());
+        if (request.getDescription() != null) reclamation.setDescription(request.getDescription());
+        if (request.getPriorite() != null) {
+            try {
+                reclamation.setPriorite(Reclamation.Priorite.valueOf(request.getPriorite()));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Priorité invalide");
+            }
+        }
+        if (request.getStatut() != null) {
+            try {
+                reclamation.setStatut(Reclamation.Statut.valueOf(request.getStatut()));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Statut invalide");
+            }
+        }
+        if (request.getAgentAssigneId() != null) {
+            User agent = userService.getUserById(UUID.fromString(request.getAgentAssigneId()));
+            reclamation.setAgentAssigne(agent);
+        }
+        reclamation.setDateModification(java.time.LocalDateTime.now());
+        Reclamation saved = reclamationRepository.save(reclamation);
+        return ReclamationMapper.toResponse(saved);
+    }
+
+    /**
+     * Deletes a complaint by its ID. Only admins are authorized to delete complaints.
+     *
+     * @param id UUID of the complaint to delete
+     * @throws RuntimeException if the user is not an admin
+     */
+    @Override
+    public void deleteReclamation(java.util.UUID id) {
+        UserPrincipal userPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String role = userPrincipal.getRole();
+        if (!"ADMIN".equals(role)) {
+            throw new AccessDeniedException("Accès refusé");
+        }
+        if (!reclamationRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Reclamation non trouvée");
+        }
+        reclamationRepository.deleteById(id);
     }
 } 

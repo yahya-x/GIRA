@@ -34,7 +34,7 @@ public abstract class BaseEntity   {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @EqualsAndHashCode.Include
-    private UUID id;
+    protected UUID id;
 
     /**
      * Timestamp indicating when the entity was created.

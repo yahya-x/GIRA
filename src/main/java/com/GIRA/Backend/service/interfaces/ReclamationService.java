@@ -19,7 +19,7 @@ public interface ReclamationService {
      * @param reclamation The complaint entity to create
      * @return The created complaint entity
      */
-    Reclamation createReclamation(Reclamation reclamation);
+    com.GIRA.Backend.DTO.response.ReclamationResponse createReclamation(com.GIRA.Backend.DTO.request.ReclamationCreateRequest request);
 
     /**
      * Retrieves a complaint by ID.
@@ -40,13 +40,13 @@ public interface ReclamationService {
      * @param reclamation The updated complaint data
      * @return The updated complaint entity
      */
-    Reclamation updateReclamation(UUID id, Reclamation reclamation);
+    com.GIRA.Backend.DTO.response.ReclamationResponse updateReclamation(java.util.UUID id, com.GIRA.Backend.DTO.request.ReclamationUpdateRequest request);
 
     /**
      * Deletes a complaint by ID.
      * @param id The complaint UUID
      */
-    void deleteReclamation(UUID id);
+    void deleteReclamation(java.util.UUID id);
 
     /**
      * Finds complaints by user ID.
@@ -150,4 +150,8 @@ public interface ReclamationService {
      * @return List of status and complaint count pairs
      */
     List<Object[]> countByStatutGroup();
+
+    // === DTO-based methods for controller ===
+    java.util.List<com.GIRA.Backend.DTO.response.ReclamationListResponse> getReclamationsForCurrentUser();
+    com.GIRA.Backend.DTO.response.ReclamationResponse getReclamationByIdForCurrentUser(java.util.UUID id);
 } 

@@ -185,6 +185,15 @@ public class User extends BaseEntity implements UserDetails {
         return null;
     }
 
+    /**
+     * Returns the unique identifier of the user.
+     *
+     * @return UUID of the user
+     */
+    public UUID getId() {
+        return this.id;
+    }
+
     // ====== UserDetails Interface Implementation ======
 
     /**
