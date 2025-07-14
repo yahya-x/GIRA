@@ -1,6 +1,9 @@
 package com.GIRA.Backend.service.interfaces;
 
 import com.GIRA.Backend.Entities.User;
+import com.GIRA.Backend.DTO.request.UserCreateRequest;
+import com.GIRA.Backend.DTO.request.UserUpdateRequest;
+import com.GIRA.Backend.DTO.response.UserResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
@@ -150,4 +153,39 @@ public interface UserService {
      * Finds a user by email.
      */
     java.util.Optional<User> findByEmail(String email);
+
+    /**
+     * Crée un nouvel utilisateur à partir d'un DTO de requête.
+     * @param request la requête de création d'utilisateur
+     * @return la réponse utilisateur créée
+     */
+    UserResponse createUser(UserCreateRequest request);
+
+    /**
+     * Met à jour un utilisateur à partir d'un DTO de requête.
+     * @param id l'identifiant de l'utilisateur
+     * @param request la requête de mise à jour
+     * @return la réponse utilisateur mise à jour
+     */
+    UserResponse updateUser(UUID id, UserUpdateRequest request);
+
+    /**
+     * Récupère un utilisateur par son identifiant et le convertit en DTO de réponse.
+     * @param id l'identifiant de l'utilisateur
+     * @return la réponse utilisateur
+     */
+    UserResponse getUserByIdDto(UUID id);
+
+    /**
+     * Recherche avancée paginée et filtrée des utilisateurs, retourne des DTOs de réponse.
+     * @param email filtre email (optionnel)
+     * @param nom filtre nom (optionnel)
+     * @param prenom filtre prénom (optionnel)
+     * @param roleId filtre rôle (optionnel)
+     * @param actif filtre actif (optionnel)
+     * @param emailVerifie filtre email vérifié (optionnel)
+     * @param pageable pagination et tri
+     * @return page de réponses utilisateur
+     */
+    Page<UserResponse> findWithFiltersDto(String email, String nom, String prenom, UUID roleId, Boolean actif, Boolean emailVerifie, Pageable pageable);
 } 

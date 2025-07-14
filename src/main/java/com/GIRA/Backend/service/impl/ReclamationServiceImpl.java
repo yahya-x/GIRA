@@ -31,6 +31,7 @@ import com.GIRA.Backend.exception.ResourceNotFoundException;
 import com.GIRA.Backend.exception.AccessDeniedException;
 import com.GIRA.Backend.exception.BadRequestException;
 import com.GIRA.Backend.Respository.UserRepository;
+import org.springframework.data.domain.PageImpl;
 
 /**
  * Implementation of ReclamationService.
@@ -171,19 +172,21 @@ public class ReclamationServiceImpl implements ReclamationService {
     }
 
     /**
-     * Advanced search with filters and pagination.
-     * @param statut The complaint status
-     * @param priorite The complaint priority
-     * @param categorieId The category UUID
+     * Advanced search with filters and pagination, returning DTOs for controller.
+     * Maps entities to ReclamationListResponse DTOs.
+     *
+     * @param statut         The complaint status
+     * @param priorite       The complaint priority
+     * @param categorieId    The category UUID
      * @param sousCategorieId The subcategory UUID
-     * @param agentId The agent UUID
-     * @param utilisateurId The user UUID
-     * @param pageable Pagination parameters
-     * @return Page of complaint entities
+     * @param agentId        The agent UUID
+     * @param utilisateurId  The user UUID
+     * @param pageable       Pagination parameters
+     * @return Page of complaint list response DTOs
      */
-    @Override
-    public Page<Reclamation> findWithFilters(Reclamation.Statut statut, Reclamation.Priorite priorite, UUID categorieId, UUID sousCategorieId, UUID agentId, UUID utilisateurId, Pageable pageable) {
-        return reclamationRepository.findWithFilters(statut, priorite, categorieId, sousCategorieId, agentId, utilisateurId, pageable);
+    public Page<ReclamationListResponse> findWithFiltersDto(Reclamation.Statut statut, Reclamation.Priorite priorite, UUID categorieId, UUID sousCategorieId, UUID agentId, UUID utilisateurId, Pageable pageable) {
+        Page<Reclamation> page = reclamationRepository.findWithFilters(statut, priorite, categorieId, sousCategorieId, agentId, utilisateurId, pageable);
+        return page.map(ReclamationMapper::toListResponse);
     }
 
     /**
@@ -376,5 +379,9 @@ public class ReclamationServiceImpl implements ReclamationService {
         reclamationRepository.deleteById(id);
     }
 
+    @Override
+    public Page<Reclamation> findWithFilters(Reclamation.Statut statut, Reclamation.Priorite priorite, UUID categorieId, UUID sousCategorieId, UUID agentId, UUID utilisateurId, Pageable pageable) {
+        return reclamationRepository.findWithFilters(statut, priorite, categorieId, sousCategorieId, agentId, utilisateurId, pageable);
+    }
 
 } 

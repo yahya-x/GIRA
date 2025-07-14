@@ -281,7 +281,7 @@ public class Reclamation extends BaseEntity {
             this.priorite = Priorite.HAUTE;
         } else {
             this.priorite = Priorite.NORMALE;
-        }
+            }
         return this.priorite;
     }
 
@@ -322,7 +322,7 @@ public class Reclamation extends BaseEntity {
     
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-    
+
     public Priorite getPriorite() { return priorite; }
     public void setPriorite(Priorite priorite) { this.priorite = priorite; }
     

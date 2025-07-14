@@ -11,6 +11,11 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.GIRA.Backend.DTO.request.UserCreateRequest;
+import com.GIRA.Backend.DTO.request.UserUpdateRequest;
+import com.GIRA.Backend.DTO.response.UserResponse;
+import com.GIRA.Backend.mapper.UserMapper;
+import org.springframework.data.domain.PageImpl;
 
 /**
  * Implementation of UserService.
@@ -28,15 +33,62 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Registers a new user.
-     * @param user User data
-     * @return Registered user
+     * Crée un nouvel utilisateur à partir d'un DTO de requête.
+     * @param request la requête de création d'utilisateur
+     * @return la réponse utilisateur créée
      */
     @Override
-    public User registerUser(User user) {
-        // Encode password before saving
+    public UserResponse createUser(UserCreateRequest request) {
+        User user = UserMapper.fromCreateRequest(request);
+        // Encoder le mot de passe
         user.setMotDePasse(passwordEncoder.encode(user.getMotDePasse()));
-        return userRepository.save(user);
+        // Définir les autres champs par défaut si nécessaire
+        User saved = userRepository.save(user);
+        return UserMapper.toResponse(saved);
+    }
+
+    /**
+     * Met à jour un utilisateur à partir d'un DTO de requête.
+     * @param id l'identifiant de l'utilisateur
+     * @param request la requête de mise à jour
+     * @return la réponse utilisateur mise à jour
+     */
+    @Override
+    public UserResponse updateUser(UUID id, UserUpdateRequest request) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) return null;
+        UserMapper.updateUserFromRequest(user, request);
+        user.setDateModification(LocalDateTime.now());
+        User saved = userRepository.save(user);
+        return UserMapper.toResponse(saved);
+    }
+
+    /**
+     * Récupère un utilisateur par son identifiant et le convertit en DTO de réponse.
+     * @param id l'identifiant de l'utilisateur
+     * @return la réponse utilisateur
+     */
+    @Override
+    public UserResponse getUserByIdDto(UUID id) {
+        User user = userRepository.findById(id).orElse(null);
+        return UserMapper.toResponse(user);
+    }
+
+    /**
+     * Recherche avancée paginée et filtrée des utilisateurs, retourne des DTOs de réponse.
+     * @param email filtre email (optionnel)
+     * @param nom filtre nom (optionnel)
+     * @param prenom filtre prénom (optionnel)
+     * @param roleId filtre rôle (optionnel)
+     * @param actif filtre actif (optionnel)
+     * @param emailVerifie filtre email vérifié (optionnel)
+     * @param pageable pagination et tri
+     * @return page de réponses utilisateur
+     */
+    @Override
+    public Page<UserResponse> findWithFiltersDto(String email, String nom, String prenom, UUID roleId, Boolean actif, Boolean emailVerifie, Pageable pageable) {
+        Page<User> page = userRepository.findWithFilters(email, nom, prenom, roleId, actif, emailVerifie, pageable);
+        return page.map(UserMapper::toResponse);
     }
 
     /**
@@ -275,5 +327,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public java.util.Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public User registerUser(User user) {
+        user.setMotDePasse(passwordEncoder.encode(user.getMotDePasse()));
+        return userRepository.save(user);
     }
 } 

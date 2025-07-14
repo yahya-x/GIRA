@@ -1,6 +1,7 @@
 package com.GIRA.Backend.service.interfaces;
 
 import com.GIRA.Backend.Entities.Reclamation;
+import com.GIRA.Backend.DTO.response.ReclamationListResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
@@ -117,6 +118,21 @@ public interface ReclamationService {
      * @return Page of complaint entities
      */
     Page<Reclamation> findWithFilters(Reclamation.Statut statut, Reclamation.Priorite priorite, UUID categorieId, UUID sousCategorieId, UUID agentId, UUID utilisateurId, Pageable pageable);
+
+    /**
+     * Advanced search with filters and pagination, returning DTOs for controller.
+     * Maps entities to ReclamationListResponse DTOs.
+     *
+     * @param statut         The complaint status
+     * @param priorite       The complaint priority
+     * @param categorieId    The category UUID
+     * @param sousCategorieId The subcategory UUID
+     * @param agentId        The agent UUID
+     * @param utilisateurId  The user UUID
+     * @param pageable       Pagination parameters
+     * @return Page of complaint list response DTOs
+     */
+    org.springframework.data.domain.Page<ReclamationListResponse> findWithFiltersDto(Reclamation.Statut statut, Reclamation.Priorite priorite, java.util.UUID categorieId, java.util.UUID sousCategorieId, java.util.UUID agentId, java.util.UUID utilisateurId, org.springframework.data.domain.Pageable pageable);
 
     /**
      * Counts complaints by status.
