@@ -135,6 +135,8 @@ public class Commentaire extends BaseEntity {
         this.dateModification = LocalDateTime.now();
     }
 
+    public boolean getLu() { return this.lu; }
+
     /**
      * Enum representing the type of comment.
      */

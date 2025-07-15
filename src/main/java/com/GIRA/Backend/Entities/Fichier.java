@@ -71,6 +71,12 @@ public class Fichier extends BaseEntity {
     private User uploadePar;
 
     /**
+     * Description of the file (optional).
+     */
+    @Column(name = "description", length = 500)
+    private String description;
+
+    /**
      * Default constructor.
      */
     public Fichier() {}
@@ -184,4 +190,11 @@ public class Fichier extends BaseEntity {
     
     public User getUploadePar() { return uploadePar; }
     public void setUploadePar(User uploadePar) { this.uploadePar = uploadePar; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    /**
+     * Returns the URL for accessing the file (for now, returns the file path).
+     */
+    public String getUrl() { return this.cheminComplet; }
 } 

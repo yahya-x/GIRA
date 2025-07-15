@@ -67,6 +67,7 @@ public class FichierServiceImpl implements FichierService {
     /**
      * Uploads a file from MultipartFile and creates a Fichier entity.
      */
+    @Override
     public Fichier uploadFile(MultipartFile file, UUID reclamationId, UUID userId) throws IOException {
         // Validate file size
         if (file.getSize() > maxFileSize) {

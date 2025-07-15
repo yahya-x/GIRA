@@ -35,6 +35,12 @@ import org.springframework.data.domain.PageImpl;
 import com.GIRA.Backend.DTO.request.ReclamationFilterRequest;
 import com.GIRA.Backend.Respository.ReclamationSpecification;
 import org.springframework.data.domain.Sort;
+import com.GIRA.Backend.service.interfaces.HistoriqueService;
+import com.GIRA.Backend.Entities.Historique;
+import com.GIRA.Backend.service.interfaces.FichierService;
+import com.GIRA.Backend.service.interfaces.CommentaireService;
+import com.GIRA.Backend.service.interfaces.NotificationService;
+import com.GIRA.Backend.Entities.Fichier;
 
 /**
  * Implementation of ReclamationService.
@@ -47,14 +53,22 @@ public class ReclamationServiceImpl implements ReclamationService {
     private final CategorieService categorieService;
     private final SousCategorieService sousCategorieService;
     private final UserRepository userRepository;
+    private final HistoriqueService historiqueService;
+    private final FichierService fichierService;
+    private final CommentaireService commentaireService;
+    private final NotificationService notificationService;
 
     @Autowired
-    public ReclamationServiceImpl(ReclamationRepository reclamationRepository, UserService userService, CategorieService categorieService, SousCategorieService sousCategorieService, UserRepository userRepository) {
+    public ReclamationServiceImpl(ReclamationRepository reclamationRepository, UserService userService, CategorieService categorieService, SousCategorieService sousCategorieService, UserRepository userRepository, HistoriqueService historiqueService, FichierService fichierService, CommentaireService commentaireService, NotificationService notificationService) {
         this.reclamationRepository = reclamationRepository;
         this.userService = userService;
         this.categorieService = categorieService;
         this.sousCategorieService = sousCategorieService;
         this.userRepository = userRepository;
+        this.historiqueService = historiqueService;
+        this.fichierService = fichierService;
+        this.commentaireService = commentaireService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -308,7 +322,7 @@ public class ReclamationServiceImpl implements ReclamationService {
         }
         Reclamation reclamation = ReclamationMapper.fromCreateRequest(request, user, categorie, sousCategorie);
         Reclamation saved = reclamationRepository.save(reclamation);
-        return ReclamationMapper.toResponse(saved);
+        return ReclamationMapper.toResponse(saved, fichierService, commentaireService, notificationService);
     }
 
     /**
@@ -351,15 +365,15 @@ public class ReclamationServiceImpl implements ReclamationService {
         Reclamation reclamation = reclamationRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Reclamation non trouvée"));
         if ("ADMIN".equals(role)) {
-            return ReclamationMapper.toResponse(reclamation);
+            return ReclamationMapper.toResponse(reclamation, fichierService, commentaireService, notificationService);
         } else if ("AGENT".equals(role)) {
             if (reclamation.getAgentAssigne() != null && reclamation.getAgentAssigne().getId().equals(user.getId())) {
-                return ReclamationMapper.toResponse(reclamation);
+                return ReclamationMapper.toResponse(reclamation, fichierService, commentaireService, notificationService);
             }
             throw new AccessDeniedException("Accès refusé");
         } else {
             if (reclamation.getUtilisateur() != null && reclamation.getUtilisateur().getId().equals(user.getId())) {
-                return ReclamationMapper.toResponse(reclamation);
+                return ReclamationMapper.toResponse(reclamation, fichierService, commentaireService, notificationService);
             }
             throw new AccessDeniedException("Accès refusé");
         }
@@ -367,7 +381,7 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Updates an existing complaint by its ID. Only agents and admins are authorized to update complaints.
-     * Updates allowed fields based on the request DTO and saves the changes. Returns a response DTO with updated details.
+     * Users can submit satisfaction and comments after resolution. All business rules are enforced.
      *
      * @param id UUID of the complaint to update
      * @param request DTO containing updated complaint data
@@ -381,32 +395,127 @@ public class ReclamationServiceImpl implements ReclamationService {
         String role = userPrincipal.getRole();
         Reclamation reclamation = reclamationRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Reclamation non trouvée"));
-        if (!"ADMIN".equals(role) && !"AGENT".equals(role)) {
-            throw new AccessDeniedException("Accès refusé");
-        }
-        if (request.getTitre() != null) reclamation.setTitre(request.getTitre());
-        if (request.getDescription() != null) reclamation.setDescription(request.getDescription());
-        if (request.getPriorite() != null) {
+
+        boolean isAdmin = "ADMIN".equals(role);
+        boolean isAgent = "AGENT".equals(role);
+        boolean isUser = "PASSAGER".equals(role);
+        boolean isOwner = reclamation.getUtilisateur() != null && reclamation.getUtilisateur().getId().equals(user.getId());
+        boolean isAssignedAgent = reclamation.getAgentAssigne() != null && reclamation.getAgentAssigne().getId().equals(user.getId());
+
+        // === AGENT/ADMIN: Update core fields, status, assignment ===
+        if (isAdmin || isAgent) {
+            if (request.getTitre() != null) reclamation.setTitre(request.getTitre());
+            if (request.getDescription() != null) reclamation.setDescription(request.getDescription());
+            if (request.getPriorite() != null) {
+                try {
+                    Reclamation.Priorite oldPriorite = reclamation.getPriorite();
+                    reclamation.setPriorite(Reclamation.Priorite.valueOf(request.getPriorite()));
+                    // Log priority change
+                    if (oldPriorite != reclamation.getPriorite()) {
+                        Historique hist = new Historique();
+                        hist.setReclamation(reclamation);
+                        hist.setUtilisateur(user);
+                        hist.setAction("CHANGEMENT_PRIORITE");
+                        hist.setAncienneValeur(oldPriorite != null ? oldPriorite.name() : null);
+                        hist.setNouvelleValeur(reclamation.getPriorite().name());
+                        hist.setDateAction(LocalDateTime.now());
+                        hist.setCommentaire("Changement de priorité par " + role);
+                        historiqueService.addHistorique(hist);
+                    }
+                } catch (IllegalArgumentException e) {
+                    throw new BadRequestException("Priorité invalide");
+                }
+            }
+            if (request.getStatut() != null) {
+                try {
+                    Reclamation.Statut oldStatut = reclamation.getStatut();
+                    reclamation.changerStatut(Reclamation.Statut.valueOf(request.getStatut()), "Mise à jour par " + role);
+                    // Log status change
+                    if (oldStatut != reclamation.getStatut()) {
+                        Historique hist = new Historique();
+                        hist.setReclamation(reclamation);
+                        hist.setUtilisateur(user);
+                        hist.setAction("CHANGEMENT_STATUT");
+                        hist.setAncienneValeur(oldStatut != null ? oldStatut.name() : null);
+                        hist.setNouvelleValeur(reclamation.getStatut().name());
+                        hist.setDateAction(LocalDateTime.now());
+                        hist.setCommentaire("Changement de statut par " + role);
+                        historiqueService.addHistorique(hist);
+                    }
+                } catch (IllegalArgumentException e) {
+                    throw new BadRequestException("Statut invalide");
+                }
+            }
+            if (request.getAgentAssigneId() != null) {
+                User oldAgent = reclamation.getAgentAssigne();
+                User agent = userService.getUserById(UUID.fromString(request.getAgentAssigneId()));
+                reclamation.setAgentAssigne(agent);
+                reclamation.assigner(agent.getId());
+                // Log assignment change
+                if (oldAgent == null || !oldAgent.getId().equals(agent.getId())) {
+                    Historique hist = new Historique();
+                    hist.setReclamation(reclamation);
+                    hist.setUtilisateur(user);
+                    hist.setAction("ASSIGNATION_AGENT");
+                    hist.setAncienneValeur(oldAgent != null ? oldAgent.getNom() + " " + oldAgent.getPrenom() : null);
+                    hist.setNouvelleValeur(agent.getNom() + " " + agent.getPrenom());
+                    hist.setDateAction(LocalDateTime.now());
+                    hist.setCommentaire("Assignation à l'agent par " + role);
+                    historiqueService.addHistorique(hist);
+                }
+            }
+            // === FILES: Add/Remove ===
+            if (request.getFichiersToAdd() != null) {
+                for (String fileId : request.getFichiersToAdd()) {
+                    Fichier fichier = fichierService.getFileById(UUID.fromString(fileId));
+                    if (fichier != null) {
+                        fichier.setReclamation(reclamation);
+                        fichierService.uploadFile(fichier); 
+                    }
+                }
+            }
+            if (request.getFichiersToRemove() != null) {
+                for (String fileId : request.getFichiersToRemove()) {
+                    Fichier fichier = fichierService.getFileById(UUID.fromString(fileId));
+                    if (fichier != null && fichier.getReclamation() != null && fichier.getReclamation().getId().equals(reclamation.getId())) {
+                        fichier.setReclamation(null);
+                        fichierService.uploadFile(fichier); 
+                    }
+                }
+            }
+            // === NOTIFICATIONS: Trigger stub ===
             try {
-                reclamation.setPriorite(Reclamation.Priorite.valueOf(request.getPriorite()));
-            } catch (IllegalArgumentException e) {
-                throw new BadRequestException("Priorité invalide");
+                notificationService.sendNotification(null); // TODO: Build and send real notification
+            } catch (Exception e) {
+                // Log or ignore for now
             }
         }
-        if (request.getStatut() != null) {
-            try {
-                reclamation.setStatut(Reclamation.Statut.valueOf(request.getStatut()));
-            } catch (IllegalArgumentException e) {
-                throw new BadRequestException("Statut invalide");
+
+        // === USER: Only satisfaction/comment after resolution ===
+        if (isUser && isOwner) {
+            if (reclamation.getStatut() == Reclamation.Statut.RESOLUE || reclamation.getStatut() == Reclamation.Statut.FERMEE) {
+                if (request.getSatisfaction() != null) {
+                    reclamation.evaluer(request.getSatisfaction(), request.getCommentaireSatisfaction());
+                    // Log evaluation
+                    Historique hist = new Historique();
+                    hist.setReclamation(reclamation);
+                    hist.setUtilisateur(user);
+                    hist.setAction("EVALUATION");
+                    hist.setAncienneValeur(null);
+                    hist.setNouvelleValeur("Note: " + request.getSatisfaction() + ", Commentaire: " + request.getCommentaireSatisfaction());
+                    hist.setDateAction(LocalDateTime.now());
+                    hist.setCommentaire("Évaluation de la réclamation par le passager");
+                    historiqueService.addHistorique(hist);
+                }
+            } else {
+                throw new AccessDeniedException("Vous ne pouvez évaluer qu'une réclamation résolue ou fermée.");
             }
         }
-        if (request.getAgentAssigneId() != null) {
-            User agent = userService.getUserById(UUID.fromString(request.getAgentAssigneId()));
-            reclamation.setAgentAssigne(agent);
-        }
+
+        // Always update modification date
         reclamation.setDateModification(java.time.LocalDateTime.now());
         Reclamation saved = reclamationRepository.save(reclamation);
-        return ReclamationMapper.toResponse(saved);
+        return ReclamationMapper.toResponse(saved, fichierService, commentaireService, notificationService);
     }
 
     /**

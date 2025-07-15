@@ -19,6 +19,15 @@ public interface FichierService {
     Fichier uploadFile(Fichier fichier);
 
     /**
+     * Uploads a file from MultipartFile and associates it with a complaint and user.
+     * @param file the file to upload
+     * @param reclamationId the complaint UUID
+     * @param userId the user UUID
+     * @return the uploaded file entity
+     */
+    Fichier uploadFile(org.springframework.web.multipart.MultipartFile file, java.util.UUID reclamationId, java.util.UUID userId) throws java.io.IOException;
+
+    /**
      * Retrieves a file by its ID.
      * @param id The file UUID
      * @return The file entity

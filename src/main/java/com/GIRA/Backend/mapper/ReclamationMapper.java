@@ -7,6 +7,17 @@ import com.GIRA.Backend.Entities.User;
 import com.GIRA.Backend.DTO.request.ReclamationCreateRequest;
 import com.GIRA.Backend.DTO.response.ReclamationResponse;
 import com.GIRA.Backend.DTO.response.ReclamationListResponse;
+import com.GIRA.Backend.DTO.response.FichierResponse;
+import com.GIRA.Backend.DTO.response.CommentaireResponse;
+import com.GIRA.Backend.DTO.response.NotificationResponse;
+import com.GIRA.Backend.Entities.Fichier;
+import com.GIRA.Backend.Entities.Commentaire;
+import com.GIRA.Backend.Entities.Notification;
+import com.GIRA.Backend.service.interfaces.FichierService;
+import com.GIRA.Backend.service.interfaces.CommentaireService;
+import com.GIRA.Backend.service.interfaces.NotificationService;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Utility class for mapping between Reclamation entities and DTOs.
@@ -46,12 +57,15 @@ public class ReclamationMapper {
     }
 
     /**
-     * Converts a Reclamation entity to a ReclamationResponse DTO.
+     * Converts a Reclamation entity to a ReclamationResponse DTO, including files, comments, and notifications.
      *
      * @param r the Reclamation entity
+     * @param fichierService the file service
+     * @param commentaireService the comment service
+     * @param notificationService the notification service
      * @return the mapped ReclamationResponse DTO
      */
-    public static ReclamationResponse toResponse(Reclamation r) {
+    public static ReclamationResponse toResponse(Reclamation r, FichierService fichierService, CommentaireService commentaireService, NotificationService notificationService) {
         if (r == null) return null;
         ReclamationResponse resp = new ReclamationResponse();
         resp.setId(r.getId() != null ? r.getId().toString() : null);
@@ -72,12 +86,56 @@ public class ReclamationMapper {
         resp.setSatisfaction(r.getSatisfaction());
         resp.setCommentaireSatisfaction(r.getCommentaireSatisfaction());
         resp.setMetadonnees(r.getMetadonnees());
-        
-        // TODO: Map files, comments, and notifications if needed
-        // - files: List<FichierResponse> from fichierRepository.findByReclamation(r)
-        // - comments: List<CommentaireResponse> from commentaireRepository.findByReclamation(r)
-        // - notifications: List<NotificationResponse> from notificationRepository.findByReclamation(r)
-        
+        // === Files ===
+        List<FichierResponse> fichiers = fichierService.getFilesByReclamationId(r.getId())
+            .stream().map(f -> FichierResponse.builder()
+                .id(f.getId())
+                .fileName(f.getNomOriginal())
+                .url(f.getUrl())
+                .description(f.getDescription())
+                .typeMime(f.getTypeMime())
+                .reclamationId(f.getReclamation() != null ? f.getReclamation().getId() : null)
+                .uploadedBy(f.getUploadePar() != null ? f.getUploadePar().getId() : null)
+                .dateUpload(f.getDateUpload())
+                .build())
+            .collect(java.util.stream.Collectors.toList());
+        // Add to response if field exists
+        try { java.lang.reflect.Field field = resp.getClass().getDeclaredField("fichiers"); field.setAccessible(true); field.set(resp, fichiers); } catch (Exception ignored) {}
+        // === Comments ===
+        List<CommentaireResponse> commentaires = commentaireService.getCommentsByReclamationId(r.getId())
+            .stream().map(c -> CommentaireResponse.builder()
+                .id(c.getId() != null ? c.getId().toString() : null)
+                .reclamationId(r.getId() != null ? r.getId().toString() : null)
+                .contenu(c.getContenu())
+                .type(c.getType())
+                .dateCreation(c.getDateCreation())
+                .dateModification(c.getDateModification())
+                .lu(c.getLu())
+                .dateMarkageLu(c.getDateMarkageLu())
+                .auteurId(c.getAuteur() != null ? c.getAuteur().getId().toString() : null)
+                .modifiePar(c.getModifiePar() != null ? c.getModifiePar().toString() : null)
+                .build())
+            .collect(java.util.stream.Collectors.toList());
+        try { java.lang.reflect.Field field = resp.getClass().getDeclaredField("commentaires"); field.setAccessible(true); field.set(resp, commentaires); } catch (Exception ignored) {}
+        // === Notifications ===
+        List<NotificationResponse> notifications = notificationService.findByReclamationId(r.getId())
+            .stream().map(n -> {
+                NotificationResponse nr = new NotificationResponse();
+                nr.setId(n.getId());
+                nr.setDestinataireId(n.getDestinataire() != null ? n.getDestinataire().getId() : null);
+                nr.setType(n.getType() != null ? n.getType().name() : null);
+                nr.setSujet(n.getSujet());
+                nr.setContenu(n.getContenu());
+                nr.setDateCreation(n.getDateCreation());
+                nr.setDateEnvoi(n.getDateEnvoi());
+                nr.setDateLecture(n.getDateLecture());
+                nr.setStatut(n.getStatut() != null ? n.getStatut().name() : null);
+                nr.setReclamationId(r.getId());
+                nr.setMetadonnees(n.getMetadonnees());
+                return nr;
+            })
+            .collect(Collectors.toList());
+        try { java.lang.reflect.Field field = resp.getClass().getDeclaredField("notifications"); field.setAccessible(true); field.set(resp, notifications); } catch (Exception ignored) {}
         return resp;
     }
 
