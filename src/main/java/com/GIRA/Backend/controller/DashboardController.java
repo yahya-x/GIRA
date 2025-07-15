@@ -31,10 +31,10 @@ public class DashboardController {
     }
 
     /**
-     * Récupère le tableau de bord administrateur avec toutes les statistiques globales.
-     * Inclut les statistiques des réclamations, performances des agents, et tendances.
+     * Retrieves the administrator dashboard with all global statistics.
+     * Includes complaint statistics, agent performance, and trends.
      *
-     * @return tableau de bord administrateur complet
+     * @return ResponseEntity containing the admin dashboard data
      */
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
@@ -44,26 +44,26 @@ public class DashboardController {
     }
 
     /**
-     * Récupère le tableau de bord agent avec les statistiques personnelles.
-     * Inclut la charge de travail, les performances, et les réclamations assignées.
+     * Retrieves the agent dashboard with personal statistics.
+     * Includes workload, performance, and assigned complaints.
      *
-     * @return tableau de bord agent complet
+     * @return ResponseEntity containing the agent dashboard data
      */
     @GetMapping("/agent")
     @PreAuthorize("hasRole('AGENT')")
     public ResponseEntity<ApiResponse<AgentDashboardResponse>> getAgentDashboard() {
-        // TODO: Extract agent ID from current user context
+        // TODO: Extract agent ID from the current user context (e.g., from JWT or SecurityContext)
         String agentId = "current-agent-id"; // Placeholder
         AgentDashboardResponse dashboard = dashboardService.getAgentDashboard(agentId);
         return ResponseEntity.ok(ApiResponse.success("Tableau de bord agent récupéré", dashboard));
     }
 
     /**
-     * Récupère les statistiques de réclamations pour une période donnée.
+     * Retrieves complaint statistics for a given period.
      *
-     * @param dateDebut date de début de la période
-     * @param dateFin date de fin de la période
-     * @return statistiques de la période spécifiée
+     * @param dateDebut start date of the period
+     * @param dateFin end date of the period
+     * @return ResponseEntity containing statistics for the specified period
      */
     @GetMapping("/statistics")
     @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
@@ -75,9 +75,9 @@ public class DashboardController {
     }
 
     /**
-     * Récupère les statistiques en temps réel (jour en cours).
+     * Retrieves real-time statistics for the current day.
      *
-     * @return statistiques du jour en cours
+     * @return ResponseEntity containing today's statistics
      */
     @GetMapping("/realtime")
     @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")

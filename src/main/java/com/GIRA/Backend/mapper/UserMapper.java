@@ -7,8 +7,8 @@ import com.GIRA.Backend.DTO.response.UserResponse;
 import com.GIRA.Backend.DTO.response.RoleResponse;
 
 /**
- * Classe utilitaire pour le mapping entre les entités User et les DTOs User.
- * Fournit des méthodes statiques pour convertir entre User, UserCreateRequest, UserUpdateRequest et UserResponse.
+ * Utility class for mapping between User entities and DTOs.
+ * Provides static methods for converting between entity and DTO representations.
  *
  * @author Mohamed Yahya Jabrane
  * @since 1.0
@@ -38,10 +38,11 @@ public class UserMapper {
     }
 
     /**
-     * Convertit un UserCreateRequest en entité User.
+     * Converts a UserCreateRequest DTO to a User entity.
+     * Maps all available fields for professional user creation.
      *
-     * @param request la requête de création d'utilisateur
-     * @return l'entité utilisateur
+     * @param request the DTO containing user creation data
+     * @return the mapped User entity
      */
     public static User fromCreateRequest(UserCreateRequest request) {
         if (request == null) return null;
@@ -49,7 +50,10 @@ public class UserMapper {
         user.setEmail(request.getEmail());
         user.setMotDePasse(request.getPassword());
         user.setNom(request.getUsername());
-        // Prénom, téléphone, langue, etc. peuvent être ajoutés si présents dans le DTO
+        // Map additional fields if present in the DTO
+        if (request.getPrenom() != null) user.setPrenom(request.getPrenom());
+        if (request.getTelephone() != null) user.setTelephone(request.getTelephone());
+        if (request.getLangue() != null) user.setLangue(request.getLangue());
         return user;
     }
 

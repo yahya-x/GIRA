@@ -82,7 +82,7 @@ public class EmailServiceImpl implements EmailService {
         } catch (Exception e) {
             logger.error("Unexpected error sending verification email to: {}", to, e);
             if (isProductionEnvironment()) {
-                throw new RuntimeException("Failed to send verification email", e);
+            throw new RuntimeException("Failed to send verification email", e);
             } else {
                 logger.warn("Email sending failed in non-production environment: {}", e.getMessage());
             }
@@ -133,7 +133,7 @@ public class EmailServiceImpl implements EmailService {
         } catch (Exception e) {
             logger.error("Unexpected error sending notification email to: {}", to, e);
             if (isProductionEnvironment()) {
-                throw new RuntimeException("Failed to send notification email", e);
+            throw new RuntimeException("Failed to send notification email", e);
             } else {
                 logger.warn("Email sending failed in non-production environment: {}", e.getMessage());
             }

@@ -113,15 +113,15 @@ public class JwtTokenProvider {
         claims.put("type", "access");
 
         try {
-            return Jwts.builder()
-                    .setClaims(claims)
-                    .setSubject(userPrincipal.getEmail())
-                    .setIssuedAt(now)
-                    .setExpiration(expiryDate)
-                    .setIssuer(jwtIssuer)
-                    .setId(UUID.randomUUID().toString())
-                    .signWith(getSigningKey(), SignatureAlgorithm.HS512)
-                    .compact();
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(userPrincipal.getEmail())
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .setIssuer(jwtIssuer)
+                .setId(UUID.randomUUID().toString())
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
         } catch (Exception e) {
             logger.error("Error generating JWT token for user: {}", userPrincipal.getEmail(), e);
             throw new RuntimeException("Failed to generate JWT token", e);
@@ -143,15 +143,15 @@ public class JwtTokenProvider {
         Date expiryDate = new Date(now.getTime() + (24 * 60 * 60 * 1000L)); // 24 hours
 
         try {
-            return Jwts.builder()
-                    .setSubject(user.getEmail())
-                    .setIssuedAt(now)
-                    .setExpiration(expiryDate)
-                    .setIssuer(jwtIssuer)
-                    .claim("type", "verification")
-                    .claim("userId", user.getId().toString())
-                    .signWith(getSigningKey(), SignatureAlgorithm.HS512)
-                    .compact();
+        return Jwts.builder()
+                .setSubject(user.getEmail())
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .setIssuer(jwtIssuer)
+                .claim("type", "verification")
+                .claim("userId", user.getId().toString())
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
         } catch (Exception e) {
             logger.error("Error generating verification token for user: {}", user.getEmail(), e);
             throw new RuntimeException("Failed to generate verification token", e);
@@ -173,15 +173,15 @@ public class JwtTokenProvider {
         Date expiryDate = new Date(now.getTime() + (60 * 60 * 1000L)); // 1 hour
 
         try {
-            return Jwts.builder()
-                    .setSubject(user.getEmail())
-                    .setIssuedAt(now)
-                    .setExpiration(expiryDate)
-                    .setIssuer(jwtIssuer)
-                    .claim("type", "password-reset")
-                    .claim("userId", user.getId().toString())
-                    .signWith(getSigningKey(), SignatureAlgorithm.HS512)
-                    .compact();
+        return Jwts.builder()
+                .setSubject(user.getEmail())
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .setIssuer(jwtIssuer)
+                .claim("type", "password-reset")
+                .claim("userId", user.getId().toString())
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
         } catch (Exception e) {
             logger.error("Error generating password reset token for user: {}", user.getEmail(), e);
             throw new RuntimeException("Failed to generate password reset token", e);
@@ -206,8 +206,8 @@ public class JwtTokenProvider {
      */
     public UUID getUserIdFromToken(String token) {
         try {
-            Claims claims = getAllClaimsFromToken(token);
-            return UUID.fromString(claims.get("userId", String.class));
+        Claims claims = getAllClaimsFromToken(token);
+        return UUID.fromString(claims.get("userId", String.class));
         } catch (Exception e) {
             logger.error("Error extracting user ID from token", e);
             throw new RuntimeException("Failed to extract user ID from token", e);
@@ -245,11 +245,11 @@ public class JwtTokenProvider {
      */
     private Claims getAllClaimsFromToken(String token) {
         try {
-            return Jwts.parser()
-                    .verifyWith(getSigningKey())
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
         } catch (JwtException e) {
             logger.error("Error parsing JWT token: {}", e.getMessage());
             throw new RuntimeException("Invalid JWT token", e);
@@ -313,7 +313,7 @@ public class JwtTokenProvider {
     private SecretKey getSigningKey() {
         try {
             // Try to create the key directly
-            return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
         } catch (Exception e) {
             logger.warn("Failed to create signing key from configured secret, using fallback: {}", e.getMessage());
             

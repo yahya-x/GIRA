@@ -14,11 +14,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
 import java.util.UUID;
 
+import com.GIRA.Backend.Entities.Role;
+import com.GIRA.Backend.Respository.RoleRepository;
+import com.GIRA.Backend.mapper.UserMapper;
+import com.GIRA.Backend.Entities.User;
+
 /**
- * Contrôleur REST pour la gestion des utilisateurs.
- * Fournit des endpoints pour les opérations CRUD, la pagination, le filtrage et la gestion des rôles.
+ * REST controller for user management operations.
+ * Allows admin to create users with specific roles and profile fields.
  *
  * @author Mohamed Yahya Jabrane
  * @since 1.0
@@ -28,22 +34,36 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final RoleRepository roleRepository;
 
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, RoleRepository roleRepository) {
         this.userService = userService;
+        this.roleRepository = roleRepository;
     }
 
     /**
-     * Crée un nouvel utilisateur.
+     * Creates a new user (admin only).
+     * Allows setting of role (PASSAGER, AGENT, ADMIN) and full profile info.
      *
-     * @param request la requête de création d'utilisateur
-     * @return la réponse utilisateur créée
+     * @param request the user creation request DTO
+     * @return ResponseEntity containing the created user or error
+     * @throws BadRequestException if the role is invalid or user already exists
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody UserCreateRequest request) {
-        UserResponse response = userService.createUser(request);
+        // Allow admin to set role (AGENT/ADMIN/PASSAGER) if provided
+        String roleName = request.getRole() != null ? request.getRole() : "PASSAGER";
+        Optional<Role> roleOpt = roleRepository.findByNom(roleName);
+        if (roleOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Role not found: " + roleName));
+        }
+        User user = UserMapper.fromCreateRequest(request);
+        user.setRole(roleOpt.get());
+        user.setEmailVerifie(true); // Admin-created users are verified by default
+        User savedUser = userService.registerUser(user);
+        UserResponse response = UserMapper.toResponse(savedUser);
         return ResponseEntity.ok(ApiResponse.success("Utilisateur créé avec succès", response));
     }
 

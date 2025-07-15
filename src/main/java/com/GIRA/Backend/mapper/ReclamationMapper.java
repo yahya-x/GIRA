@@ -8,7 +8,23 @@ import com.GIRA.Backend.DTO.request.ReclamationCreateRequest;
 import com.GIRA.Backend.DTO.response.ReclamationResponse;
 import com.GIRA.Backend.DTO.response.ReclamationListResponse;
 
+/**
+ * Utility class for mapping between Reclamation entities and DTOs.
+ * Provides static methods for converting between entity and DTO representations.
+ *
+ * @author Mohamed Yahya Jabrane
+ * @since 1.0
+ */
 public class ReclamationMapper {
+    /**
+     * Converts a ReclamationCreateRequest DTO to a Reclamation entity.
+     *
+     * @param req the DTO containing creation data
+     * @param user the user submitting the complaint
+     * @param categorie the complaint category
+     * @param sousCategorie the complaint sub-category
+     * @return the mapped Reclamation entity
+     */
     public static Reclamation fromCreateRequest(ReclamationCreateRequest req, User user, Categorie categorie, SousCategorie sousCategorie) {
         Reclamation r = new Reclamation();
         r.setCategorie(categorie);
@@ -21,15 +37,20 @@ public class ReclamationMapper {
         r.setPriorite(r.determinerPrioriteAutomatique());
         r.setStatut(Reclamation.Statut.SOUMISE);
         
-        // Handle champsSpecifiques, fichiers, notifications
-        // In real app, these would be processed separately:
+        // TODO: Handle champsSpecifiques, files, and notifications
         // - champsSpecifiques: validate against sousCategorie requirements
-        // - fichiers: create Fichier entities and associate
+        // - files: create Fichier entities and associate
         // - notifications: create initial notification for submission
         
         return r;
     }
 
+    /**
+     * Converts a Reclamation entity to a ReclamationResponse DTO.
+     *
+     * @param r the Reclamation entity
+     * @return the mapped ReclamationResponse DTO
+     */
     public static ReclamationResponse toResponse(Reclamation r) {
         if (r == null) return null;
         ReclamationResponse resp = new ReclamationResponse();
@@ -52,8 +73,7 @@ public class ReclamationMapper {
         resp.setCommentaireSatisfaction(r.getCommentaireSatisfaction());
         resp.setMetadonnees(r.getMetadonnees());
         
-        // Map files, comments, etc.
-        // In real app, these would be fetched and mapped:
+        // TODO: Map files, comments, and notifications if needed
         // - files: List<FichierResponse> from fichierRepository.findByReclamation(r)
         // - comments: List<CommentaireResponse> from commentaireRepository.findByReclamation(r)
         // - notifications: List<NotificationResponse> from notificationRepository.findByReclamation(r)
@@ -61,6 +81,12 @@ public class ReclamationMapper {
         return resp;
     }
 
+    /**
+     * Converts a Reclamation entity to a ReclamationListResponse DTO for list views.
+     *
+     * @param r the Reclamation entity
+     * @return the mapped ReclamationListResponse DTO
+     */
     public static ReclamationListResponse toListResponse(Reclamation r) {
         if (r == null) return null;
         return ReclamationListResponse.builder()

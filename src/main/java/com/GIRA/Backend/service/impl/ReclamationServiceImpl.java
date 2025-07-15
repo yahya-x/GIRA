@@ -58,7 +58,8 @@ public class ReclamationServiceImpl implements ReclamationService {
     }
 
     /**
-     * Creates a new complaint.
+     * Creates a new complaint entity in the database.
+     *
      * @param reclamation The complaint entity to create
      * @return The created complaint entity
      */
@@ -67,9 +68,10 @@ public class ReclamationServiceImpl implements ReclamationService {
     }
 
     /**
-     * Retrieves a complaint by ID.
+     * Retrieves a complaint by its unique ID.
+     *
      * @param id The complaint UUID
-     * @return Optional containing the complaint entity if found
+     * @return Optional containing the complaint entity if found, otherwise empty
      */
     @Override
     public Optional<Reclamation> getReclamationById(UUID id) {
@@ -77,8 +79,9 @@ public class ReclamationServiceImpl implements ReclamationService {
     }
 
     /**
-     * Retrieves all complaints.
-     * @return List of complaint entities
+     * Retrieves all complaints in the system.
+     *
+     * @return List of all complaint entities
      */
     @Override
     public List<Reclamation> getAllReclamations() {
@@ -86,17 +89,19 @@ public class ReclamationServiceImpl implements ReclamationService {
     }
 
     /**
-     * Updates a complaint.
+     * Updates a complaint by its ID.
+     *
      * @param id The complaint UUID
      * @param reclamation The updated complaint data
      * @return The updated complaint entity
      */
-
+    // TODO: Implement update logic and add @Override when implemented
 
     /**
      * Finds complaints by user ID.
+     *
      * @param utilisateurId The user UUID
-     * @return List of complaint entities
+     * @return List of complaint entities submitted by the user
      */
     @Override
     public List<Reclamation> findByUtilisateurId(UUID utilisateurId) {
@@ -105,8 +110,9 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Finds complaints by assigned agent ID.
+     *
      * @param agentId The agent UUID
-     * @return List of complaint entities
+     * @return List of complaint entities assigned to the agent
      */
     @Override
     public List<Reclamation> findByAgentAssigneId(UUID agentId) {
@@ -115,8 +121,9 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Finds complaints by status.
+     *
      * @param statut The complaint status
-     * @return List of complaint entities
+     * @return List of complaint entities with the given status
      */
     @Override
     public List<Reclamation> findByStatut(Reclamation.Statut statut) {
@@ -125,8 +132,9 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Finds complaints by category ID.
+     *
      * @param categorieId The category UUID
-     * @return List of complaint entities
+     * @return List of complaint entities in the category
      */
     @Override
     public List<Reclamation> findByCategorieId(UUID categorieId) {
@@ -135,8 +143,9 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Finds complaints by subcategory ID.
+     *
      * @param sousCategorieId The subcategory UUID
-     * @return List of complaint entities
+     * @return List of complaint entities in the subcategory
      */
     @Override
     public List<Reclamation> findBySousCategorieId(UUID sousCategorieId) {
@@ -145,8 +154,9 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Finds a complaint by its unique number.
+     *
      * @param numero The unique complaint number
-     * @return Optional containing the complaint entity if found
+     * @return Optional containing the complaint entity if found, otherwise empty
      */
     @Override
     public Optional<Reclamation> findByNumero(String numero) {
@@ -155,9 +165,10 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Finds complaints by creation date range.
+     *
      * @param dateDebut Start date
      * @param dateFin End date
-     * @return List of complaint entities
+     * @return List of complaint entities created in the date range
      */
     @Override
     public List<Reclamation> findByDateCreationBetween(LocalDateTime dateDebut, LocalDateTime dateFin) {
@@ -166,8 +177,9 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Finds complaints by priority.
+     *
      * @param priorite The complaint priority
-     * @return List of complaint entities
+     * @return List of complaint entities with the given priority
      */
     @Override
     public List<Reclamation> findByPriorite(Reclamation.Priorite priorite) {
@@ -187,17 +199,18 @@ public class ReclamationServiceImpl implements ReclamationService {
      * @param pageable       Pagination parameters
      * @return Page of complaint list response DTOs
      */
+    @Override
     public Page<ReclamationListResponse> findWithFiltersDto(Reclamation.Statut statut, Reclamation.Priorite priorite, UUID categorieId, UUID sousCategorieId, UUID agentId, UUID utilisateurId, Pageable pageable) {
         Page<Reclamation> page = reclamationRepository.findWithFilters(statut, priorite, categorieId, sousCategorieId, agentId, utilisateurId, pageable);
         return page.map(ReclamationMapper::toListResponse);
     }
 
     /**
-     * Recherche avancée paginée et filtrée des réclamations via un DTO de filtre.
-     * Utilise une Specification JPA pour appliquer dynamiquement les critères métier.
+     * Advanced search with filters and pagination using a filter DTO.
+     * Uses a JPA Specification to apply dynamic business criteria.
      *
-     * @param filterRequest DTO contenant les critères de filtrage et de pagination
-     * @return page de réponses liste réclamation
+     * @param filterRequest DTO containing filter and pagination criteria
+     * @return Page of complaint list response DTOs
      */
     @Override
     public Page<ReclamationListResponse> findWithFiltersDto(ReclamationFilterRequest filterRequest) {
@@ -224,8 +237,9 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Counts complaints by status.
+     *
      * @param statut The complaint status
-     * @return Number of complaints
+     * @return Number of complaints with the given status
      */
     @Override
     public long countByStatut(Reclamation.Statut statut) {
@@ -234,8 +248,9 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Counts complaints by agent.
+     *
      * @param agentId The agent UUID
-     * @return Number of complaints
+     * @return Number of complaints assigned to the agent
      */
     @Override
     public long countByAgentAssigneId(UUID agentId) {
@@ -244,8 +259,9 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     /**
      * Counts complaints by user.
+     *
      * @param utilisateurId The user UUID
-     * @return Number of complaints
+     * @return Number of complaints submitted by the user
      */
     @Override
     public long countByUtilisateurId(UUID utilisateurId) {

@@ -35,6 +35,11 @@ public class DashboardServiceImpl implements DashboardService {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Retrieves the administrator dashboard with global statistics, agent performance, and trends.
+     *
+     * @return AdminDashboardResponse containing all admin dashboard data
+     */
     @Override
     public AdminDashboardResponse getAdminDashboard() {
         // Get current date for calculations
@@ -132,6 +137,12 @@ public class DashboardServiceImpl implements DashboardService {
                 .build();
     }
 
+    /**
+     * Retrieves the agent dashboard with personal statistics, workload, and performance.
+     *
+     * @param agentId the agent's UUID as a string
+     * @return AgentDashboardResponse containing all agent dashboard data
+     */
     @Override
     public AgentDashboardResponse getAgentDashboard(String agentId) {
         try {
@@ -249,6 +260,13 @@ public class DashboardServiceImpl implements DashboardService {
         }
     }
 
+    /**
+     * Retrieves complaint statistics for a given period.
+     *
+     * @param dateDebut start date of the period
+     * @param dateFin end date of the period
+     * @return AdminDashboardResponse containing statistics for the period
+     */
     @Override
     public AdminDashboardResponse getReclamationStatistics(LocalDate dateDebut, LocalDate dateFin) {
         LocalDateTime startDateTime = dateDebut.atStartOfDay();
@@ -320,6 +338,11 @@ public class DashboardServiceImpl implements DashboardService {
                 .build();
     }
 
+    /**
+     * Retrieves real-time statistics for the current day.
+     *
+     * @return AdminDashboardResponse containing today's statistics
+     */
     @Override
     public AdminDashboardResponse getRealTimeStatistics() {
         // Get today's statistics (same as getAdminDashboard but focused on today)
