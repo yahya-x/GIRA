@@ -4,6 +4,7 @@ import com.GIRA.Backend.Entities.Reclamation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -21,7 +22,7 @@ import java.util.UUID;
  * @since 1.0
  */
 @Repository
-public interface ReclamationRepository extends JpaRepository<Reclamation, UUID> {
+public interface ReclamationRepository extends JpaRepository<Reclamation, UUID>, JpaSpecificationExecutor<Reclamation> {
     /**
      * Finds complaints by user ID.
      * @param utilisateurId the user UUID
@@ -128,4 +129,45 @@ public interface ReclamationRepository extends JpaRepository<Reclamation, UUID> 
      */
     @Query("SELECT r.statut, COUNT(r.id) FROM Reclamation r GROUP BY r.statut")
     List<Object[]> countByStatutGroup();
+    
+    /**
+     * Counts complaints by creation date range.
+     * @param dateDebut start date
+     * @param dateFin end date
+     * @return number of complaints created in the date range
+     */
+    long countByDateCreationBetween(LocalDateTime dateDebut, LocalDateTime dateFin);
+    
+    /**
+     * Counts complaints by status and creation date range.
+     * @param statut the complaint status
+     * @param dateDebut start date
+     * @param dateFin end date
+     * @return number of complaints with the specified status in the date range
+     */
+    long countByStatutAndDateCreationBetween(Reclamation.Statut statut, LocalDateTime dateDebut, LocalDateTime dateFin);
+    
+    /**
+     * Finds average resolution time in hours.
+     * @return average resolution time or null if no resolved complaints
+     */
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (r.date_resolution - r.date_creation))/3600.0) FROM reclamations r WHERE r.date_resolution IS NOT NULL", nativeQuery = true)
+    Double findAverageResolutionTime();
+    
+    /**
+     * Finds average resolution time in hours for a specific agent.
+     * @param agentId the agent UUID
+     * @return average resolution time or null if no resolved complaints
+     */
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (r.date_resolution - r.date_creation))/3600.0) FROM reclamations r WHERE r.agent_assigne_id = :agentId AND r.date_resolution IS NOT NULL", nativeQuery = true)
+    Double findAverageResolutionTimeByAgent(@Param("agentId") UUID agentId);
+    
+    /**
+     * Finds average resolution time in hours for a date range.
+     * @param dateDebut start date
+     * @param dateFin end date
+     * @return average resolution time or null if no resolved complaints
+     */
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (r.date_resolution - r.date_creation))/3600.0) FROM reclamations r WHERE r.date_creation BETWEEN :dateDebut AND :dateFin AND r.date_resolution IS NOT NULL", nativeQuery = true)
+    Double findAverageResolutionTimeBetween(@Param("dateDebut") LocalDateTime dateDebut, @Param("dateFin") LocalDateTime dateFin);
 } 

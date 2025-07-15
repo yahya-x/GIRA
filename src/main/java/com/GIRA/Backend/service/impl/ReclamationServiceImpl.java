@@ -32,6 +32,9 @@ import com.GIRA.Backend.exception.AccessDeniedException;
 import com.GIRA.Backend.exception.BadRequestException;
 import com.GIRA.Backend.Respository.UserRepository;
 import org.springframework.data.domain.PageImpl;
+import com.GIRA.Backend.DTO.request.ReclamationFilterRequest;
+import com.GIRA.Backend.Respository.ReclamationSpecification;
+import org.springframework.data.domain.Sort;
 
 /**
  * Implementation of ReclamationService.
@@ -187,6 +190,36 @@ public class ReclamationServiceImpl implements ReclamationService {
     public Page<ReclamationListResponse> findWithFiltersDto(Reclamation.Statut statut, Reclamation.Priorite priorite, UUID categorieId, UUID sousCategorieId, UUID agentId, UUID utilisateurId, Pageable pageable) {
         Page<Reclamation> page = reclamationRepository.findWithFilters(statut, priorite, categorieId, sousCategorieId, agentId, utilisateurId, pageable);
         return page.map(ReclamationMapper::toListResponse);
+    }
+
+    /**
+     * Recherche avancée paginée et filtrée des réclamations via un DTO de filtre.
+     * Utilise une Specification JPA pour appliquer dynamiquement les critères métier.
+     *
+     * @param filterRequest DTO contenant les critères de filtrage et de pagination
+     * @return page de réponses liste réclamation
+     */
+    @Override
+    public Page<ReclamationListResponse> findWithFiltersDto(ReclamationFilterRequest filterRequest) {
+        // Build Pageable from DTO
+        int page = filterRequest.getPage() != null ? filterRequest.getPage() : 0;
+        int size = filterRequest.getSize() != null ? filterRequest.getSize() : 20;
+        Sort sort = Sort.by(Sort.Direction.DESC, "dateCreation");
+        if (filterRequest.getSort() != null && !filterRequest.getSort().isEmpty()) {
+            String[] sortParts = filterRequest.getSort().split(",");
+            if (sortParts.length == 2) {
+                sort = Sort.by(Sort.Direction.fromString(sortParts[1]), sortParts[0]);
+            } else {
+                sort = Sort.by(sortParts[0]);
+            }
+        }
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sort);
+        // Build Specification
+        var spec = ReclamationSpecification.fromFilterRequest(filterRequest);
+        // Query
+        Page<com.GIRA.Backend.Entities.Reclamation> reclamations = reclamationRepository.findAll(spec, pageable);
+        // Map to DTOs
+        return reclamations.map(com.GIRA.Backend.mapper.ReclamationMapper::toListResponse);
     }
 
     /**

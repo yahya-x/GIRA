@@ -5,6 +5,7 @@ import com.GIRA.Backend.DTO.request.ReclamationUpdateRequest;
 import com.GIRA.Backend.DTO.response.ReclamationListResponse;
 import com.GIRA.Backend.DTO.response.ReclamationResponse;
 import com.GIRA.Backend.DTO.common.ApiResponse;
+import com.GIRA.Backend.DTO.request.ReclamationFilterRequest;
 import com.GIRA.Backend.Entities.Reclamation;
 import com.GIRA.Backend.service.interfaces.ReclamationService;
 import jakarta.validation.Valid;
@@ -49,6 +50,21 @@ public class ReclamationController {
     public ResponseEntity<ApiResponse<ReclamationResponse>> createReclamation(@Valid @RequestBody ReclamationCreateRequest request) {
         ReclamationResponse response = reclamationService.createReclamation(request);
         return ResponseEntity.ok(ApiResponse.success("Reclamation créée avec succès", response));
+    }
+
+    /**
+     * Recherche avancée paginée et filtrée des réclamations via un DTO de filtre.
+     * Permet de rechercher selon plusieurs critères métier et de contrôler la pagination/tri.
+     *
+     * @param filterRequest DTO contenant les critères de filtrage et de pagination
+     * @return page de réponses liste réclamation
+     */
+    @PostMapping("/search")
+    @PreAuthorize("hasAnyRole('PASSAGER', 'AGENT', 'ADMIN')")
+    public ResponseEntity<ApiResponse<Page<ReclamationListResponse>>> searchReclamations(
+            @Valid @RequestBody ReclamationFilterRequest filterRequest) {
+        Page<ReclamationListResponse> responses = reclamationService.findWithFiltersDto(filterRequest);
+        return ResponseEntity.ok(ApiResponse.success("Liste des réclamations filtrée récupérée", responses));
     }
 
     /**

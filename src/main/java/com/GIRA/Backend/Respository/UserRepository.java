@@ -158,4 +158,16 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      */
     @Query("SELECT u FROM User u LEFT JOIN Reclamation r ON u.id = r.utilisateur.id WHERE u.actif = true GROUP BY u.id ORDER BY COUNT(r.id) DESC")
     List<User> findUsersOrderByReclamationCount(Pageable pageable);
+    
+    /**
+     * Finds top agents by resolution count.
+     * @param limit maximum number of agents to return
+     * @return list of top performing agents
+     */
+    @Query(value = "SELECT u.* FROM users u " +
+           "JOIN reclamations r ON u.id = r.agent_assigne_id " +
+           "WHERE u.actif = true AND r.statut = 'RESOLUE' " +
+           "GROUP BY u.id ORDER BY COUNT(r.id) DESC LIMIT :limit", 
+           nativeQuery = true)
+    List<User> findTopAgentsByResolutionCount(@Param("limit") int limit);
 } 
