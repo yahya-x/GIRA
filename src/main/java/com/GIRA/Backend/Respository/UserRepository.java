@@ -170,4 +170,47 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
            "GROUP BY u.id ORDER BY COUNT(r.id) DESC LIMIT :limit", 
            nativeQuery = true)
     List<User> findTopAgentsByResolutionCount(@Param("limit") int limit);
+    
+    /**
+     * Counts assigned complaints for a specific agent.
+     * @param agentId the agent UUID
+     * @return number of complaints assigned to the agent
+     */
+    @Query("SELECT COUNT(r) FROM Reclamation r WHERE r.agentAssigne.id = :agentId")
+    long countAssignedReclamationsByAgent(@Param("agentId") UUID agentId);
+    
+    /**
+     * Counts resolved complaints for a specific agent.
+     * @param agentId the agent UUID
+     * @return number of complaints resolved by the agent
+     */
+    @Query("SELECT COUNT(r) FROM Reclamation r WHERE r.agentAssigne.id = :agentId AND r.statut = 'RESOLUE'")
+    long countResolvedReclamationsByAgent(@Param("agentId") UUID agentId);
+    
+    /**
+     * Calculates average satisfaction rating for a specific agent.
+     * @param agentId the agent UUID
+     * @return average satisfaction rating or null if no ratings
+     */
+    @Query("SELECT AVG(r.satisfaction) FROM Reclamation r WHERE r.agentAssigne.id = :agentId AND r.satisfaction IS NOT NULL")
+    Double findAverageSatisfactionByAgent(@Param("agentId") UUID agentId);
+    
+    /**
+     * Gets satisfaction distribution for a specific agent.
+     * @param agentId the agent UUID
+     * @return list of satisfaction rating and count pairs
+     */
+    @Query("SELECT r.satisfaction, COUNT(r.id) FROM Reclamation r WHERE r.agentAssigne.id = :agentId AND r.satisfaction IS NOT NULL GROUP BY r.satisfaction")
+    List<Object[]> findSatisfactionDistributionByAgent(@Param("agentId") UUID agentId);
+    
+    /**
+     * Gets agent performance statistics.
+     * @param agentId the agent UUID
+     * @return array with assigned count, resolved count, and average satisfaction
+     */
+    @Query("SELECT COUNT(r) as assigned, " +
+           "COUNT(CASE WHEN r.statut = 'RESOLUE' THEN 1 END) as resolved, " +
+           "AVG(r.satisfaction) as satisfaction " +
+           "FROM Reclamation r WHERE r.agentAssigne.id = :agentId")
+    Object[] getAgentPerformanceStats(@Param("agentId") UUID agentId);
 } 

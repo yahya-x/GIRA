@@ -170,4 +170,136 @@ public interface ReclamationRepository extends JpaRepository<Reclamation, UUID>,
      */
     @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (r.date_resolution - r.date_creation))/3600.0) FROM reclamations r WHERE r.date_creation BETWEEN :dateDebut AND :dateFin AND r.date_resolution IS NOT NULL", nativeQuery = true)
     Double findAverageResolutionTimeBetween(@Param("dateDebut") LocalDateTime dateDebut, @Param("dateFin") LocalDateTime dateFin);
+    
+    /**
+     * Counts urgent complaints (priority URGENTE).
+     * @return number of urgent complaints
+     */
+    long countByPriorite(Reclamation.Priorite priorite);
+    
+    /**
+     * Counts urgent complaints for a specific agent.
+     * @param agentId the agent UUID
+     * @return number of urgent complaints assigned to the agent
+     */
+    @Query("SELECT COUNT(r) FROM Reclamation r WHERE r.agentAssigne.id = :agentId AND r.priorite = 'URGENTE'")
+    long countUrgentReclamationsByAgent(@Param("agentId") UUID agentId);
+    
+    /**
+     * Counts overdue complaints (past due date).
+     * @return number of overdue complaints
+     */
+    @Query("SELECT COUNT(r) FROM Reclamation r WHERE r.dateEcheance < :now AND r.statut NOT IN ('RESOLUE', 'FERMEE')")
+    long countOverdueReclamations(@Param("now") LocalDateTime now);
+    
+    /**
+     * Counts overdue complaints for a specific agent.
+     * @param agentId the agent UUID
+     * @param now current date time
+     * @return number of overdue complaints assigned to the agent
+     */
+    @Query("SELECT COUNT(r) FROM Reclamation r WHERE r.agentAssigne.id = :agentId AND r.dateEcheance < :now AND r.statut NOT IN ('RESOLUE', 'FERMEE')")
+    long countOverdueReclamationsByAgent(@Param("agentId") UUID agentId, @Param("now") LocalDateTime now);
+    
+    /**
+     * Gets complaints by priority distribution.
+     * @return list of priority and complaint count pairs
+     */
+    @Query("SELECT r.priorite, COUNT(r.id) FROM Reclamation r GROUP BY r.priorite")
+    List<Object[]> countByPrioriteGroup();
+    
+    /**
+     * Gets complaints by priority distribution for a specific agent.
+     * @param agentId the agent UUID
+     * @return list of priority and complaint count pairs
+     */
+    @Query("SELECT r.priorite, COUNT(r.id) FROM Reclamation r WHERE r.agentAssigne.id = :agentId GROUP BY r.priorite")
+    List<Object[]> countByPrioriteGroupForAgent(@Param("agentId") UUID agentId);
+    
+    /**
+     * Gets complaints by category distribution for a specific agent.
+     * @param agentId the agent UUID
+     * @return list of category name and complaint count pairs
+     */
+    @Query("SELECT r.categorie.nom, COUNT(r.id) FROM Reclamation r WHERE r.agentAssigne.id = :agentId GROUP BY r.categorie.nom")
+    List<Object[]> countByCategorieForAgent(@Param("agentId") UUID agentId);
+    
+    /**
+     * Gets average resolution time by category.
+     * @return list of category name and average resolution time pairs
+     */
+    @Query(value = "SELECT r.categorie.nom, AVG(EXTRACT(EPOCH FROM (r.date_resolution - r.date_creation))/3600.0) " +
+           "FROM reclamations r WHERE r.date_resolution IS NOT NULL GROUP BY r.categorie.nom", nativeQuery = true)
+    List<Object[]> findAverageResolutionTimeByCategorie();
+    
+    /**
+     * Gets complaints with satisfaction ratings.
+     * @return list of complaints with satisfaction data
+     */
+    @Query("SELECT r FROM Reclamation r WHERE r.satisfaction IS NOT NULL")
+    List<Reclamation> findReclamationsWithSatisfaction();
+    
+    /**
+     * Gets complaints with satisfaction ratings for a specific agent.
+     * @param agentId the agent UUID
+     * @return list of complaints with satisfaction data
+     */
+    @Query("SELECT r FROM Reclamation r WHERE r.agentAssigne.id = :agentId AND r.satisfaction IS NOT NULL")
+    List<Reclamation> findReclamationsWithSatisfactionByAgent(@Param("agentId") UUID agentId);
+    
+    /**
+     * Gets daily complaint trends for the last 30 days.
+     * @return list of date and complaint count pairs
+     */
+    @Query(value = "SELECT DATE(r.date_creation) as date, COUNT(r.id) as count " +
+           "FROM reclamations r " +
+           "WHERE r.date_creation >= :startDate " +
+           "GROUP BY DATE(r.date_creation) " +
+           "ORDER BY date", nativeQuery = true)
+    List<Object[]> findDailyTrends(@Param("startDate") LocalDateTime startDate);
+    
+    /**
+     * Gets daily complaint trends for a specific agent for the last 7 days.
+     * @param agentId the agent UUID
+     * @param startDate start date for trends
+     * @return list of date and complaint count pairs
+     */
+    @Query(value = "SELECT DATE(r.date_creation) as date, COUNT(r.id) as count " +
+           "FROM reclamations r " +
+           "WHERE r.agent_assigne_id = :agentId AND r.date_creation >= :startDate " +
+           "GROUP BY DATE(r.date_creation) " +
+           "ORDER BY date", nativeQuery = true)
+    List<Object[]> findDailyTrendsByAgent(@Param("agentId") UUID agentId, @Param("startDate") LocalDateTime startDate);
+    
+    /**
+     * Gets urgent complaints list.
+     * @return list of urgent complaints
+     */
+    @Query("SELECT r FROM Reclamation r WHERE r.priorite = 'URGENTE' AND r.statut NOT IN ('RESOLUE', 'FERMEE') ORDER BY r.dateCreation DESC")
+    List<Reclamation> findUrgentReclamations();
+    
+    /**
+     * Gets urgent complaints list for a specific agent.
+     * @param agentId the agent UUID
+     * @return list of urgent complaints assigned to the agent
+     */
+    @Query("SELECT r FROM Reclamation r WHERE r.agentAssigne.id = :agentId AND r.priorite = 'URGENTE' AND r.statut NOT IN ('RESOLUE', 'FERMEE') ORDER BY r.dateCreation DESC")
+    List<Reclamation> findUrgentReclamationsByAgent(@Param("agentId") UUID agentId);
+    
+    /**
+     * Gets overdue complaints list.
+     * @param now current date time
+     * @return list of overdue complaints
+     */
+    @Query("SELECT r FROM Reclamation r WHERE r.dateEcheance < :now AND r.statut NOT IN ('RESOLUE', 'FERMEE') ORDER BY r.dateEcheance ASC")
+    List<Reclamation> findOverdueReclamations(@Param("now") LocalDateTime now);
+    
+    /**
+     * Gets overdue complaints list for a specific agent.
+     * @param agentId the agent UUID
+     * @param now current date time
+     * @return list of overdue complaints assigned to the agent
+     */
+    @Query("SELECT r FROM Reclamation r WHERE r.agentAssigne.id = :agentId AND r.dateEcheance < :now AND r.statut NOT IN ('RESOLUE', 'FERMEE') ORDER BY r.dateEcheance ASC")
+    List<Reclamation> findOverdueReclamationsByAgent(@Param("agentId") UUID agentId, @Param("now") LocalDateTime now);
 } 

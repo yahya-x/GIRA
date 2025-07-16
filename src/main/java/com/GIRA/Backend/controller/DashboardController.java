@@ -11,6 +11,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.GIRA.Backend.security.UserPrincipal;
+import org.springframework.security.access.AccessDeniedException;
 
 /**
  * REST controller for dashboard operations.
@@ -52,8 +55,20 @@ public class DashboardController {
     @GetMapping("/agent")
     @PreAuthorize("hasRole('AGENT')")
     public ResponseEntity<ApiResponse<AgentDashboardResponse>> getAgentDashboard() {
-        // TODO: Extract agent ID from the current user context (e.g., from JWT or SecurityContext)
-        String agentId = "current-agent-id"; // Placeholder
+        // Extract agent ID from the current user context
+        String agentId = null;
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (principal instanceof UserPrincipal) {
+                UserPrincipal userPrincipal = (UserPrincipal) principal;
+                agentId = userPrincipal.getId().toString();
+            } else {
+                throw new AccessDeniedException("Unable to identify current user");
+            }
+        } catch (Exception e) {
+            throw new AccessDeniedException("Unable to access agent dashboard: " + e.getMessage());
+        }
+        
         AgentDashboardResponse dashboard = dashboardService.getAgentDashboard(agentId);
         return ResponseEntity.ok(ApiResponse.success("Tableau de bord agent récupéré", dashboard));
     }
