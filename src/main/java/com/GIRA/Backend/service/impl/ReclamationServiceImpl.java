@@ -404,12 +404,12 @@ public class ReclamationServiceImpl implements ReclamationService {
 
         // === AGENT/ADMIN: Update core fields, status, assignment ===
         if (isAdmin || isAgent) {
-            if (request.getTitre() != null) reclamation.setTitre(request.getTitre());
-            if (request.getDescription() != null) reclamation.setDescription(request.getDescription());
-            if (request.getPriorite() != null) {
-                try {
+        if (request.getTitre() != null) reclamation.setTitre(request.getTitre());
+        if (request.getDescription() != null) reclamation.setDescription(request.getDescription());
+        if (request.getPriorite() != null) {
+            try {
                     Reclamation.Priorite oldPriorite = reclamation.getPriorite();
-                    reclamation.setPriorite(Reclamation.Priorite.valueOf(request.getPriorite()));
+                reclamation.setPriorite(Reclamation.Priorite.valueOf(request.getPriorite()));
                     // Log priority change
                     if (oldPriorite != reclamation.getPriorite()) {
                         Historique hist = new Historique();
@@ -422,12 +422,12 @@ public class ReclamationServiceImpl implements ReclamationService {
                         hist.setCommentaire("Changement de priorité par " + role);
                         historiqueService.addHistorique(hist);
                     }
-                } catch (IllegalArgumentException e) {
-                    throw new BadRequestException("Priorité invalide");
-                }
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Priorité invalide");
             }
-            if (request.getStatut() != null) {
-                try {
+        }
+        if (request.getStatut() != null) {
+            try {
                     Reclamation.Statut oldStatut = reclamation.getStatut();
                     reclamation.changerStatut(Reclamation.Statut.valueOf(request.getStatut()), "Mise à jour par " + role);
                     // Log status change
@@ -442,14 +442,14 @@ public class ReclamationServiceImpl implements ReclamationService {
                         hist.setCommentaire("Changement de statut par " + role);
                         historiqueService.addHistorique(hist);
                     }
-                } catch (IllegalArgumentException e) {
-                    throw new BadRequestException("Statut invalide");
-                }
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Statut invalide");
             }
-            if (request.getAgentAssigneId() != null) {
+        }
+        if (request.getAgentAssigneId() != null) {
                 User oldAgent = reclamation.getAgentAssigne();
-                User agent = userService.getUserById(UUID.fromString(request.getAgentAssigneId()));
-                reclamation.setAgentAssigne(agent);
+            User agent = userService.getUserById(UUID.fromString(request.getAgentAssigneId()));
+            reclamation.setAgentAssigne(agent);
                 reclamation.assigner(agent.getId());
                 // Log assignment change
                 if (oldAgent == null || !oldAgent.getId().equals(agent.getId())) {

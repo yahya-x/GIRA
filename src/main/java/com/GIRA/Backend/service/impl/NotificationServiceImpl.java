@@ -11,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.GIRA.Backend.service.interfaces.EmailService;
 
 /**
  * Implementation of NotificationService.
@@ -20,32 +22,44 @@ import java.util.UUID;
 @Service
 public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
+    private final SimpMessagingTemplate simpMessagingTemplate;
+    private final EmailService emailService;
 
     @Autowired
-    public NotificationServiceImpl(NotificationRepository notificationRepository) {
+    public NotificationServiceImpl(NotificationRepository notificationRepository, SimpMessagingTemplate simpMessagingTemplate, EmailService emailService) {
         this.notificationRepository = notificationRepository;
+        this.simpMessagingTemplate = simpMessagingTemplate;
+        this.emailService = emailService;
     }
 
     /**
-     * Sends a notification via the appropriate channel (email, push, SMS).
-     * Updates the notification status and persists it.
+     * Sends a notification via the appropriate channel (email, push, SMS, WebSocket).
+     * Updates the notification status, persists it, and broadcasts via WebSocket if needed.
      *
      * @param notification the notification entity to send
      * @return the sent notification entity
      */
     @Override
     public Notification sendNotification(Notification notification) {
-        // Send notification via appropriate channel (email, push, SMS)
         try {
             switch (notification.getType()) {
                 case EMAIL:
-                    // Simulate email sending
+                    // Send email using EmailService
+                    if (notification.getDestinataire() != null && notification.getDestinataire().getEmail() != null) {
+                        String subject = notification.getSujet() != null ? notification.getSujet() : "Notification GIRA";
+                        String body = notification.getContenu();
+                        emailService.sendNotificationEmail(notification.getDestinataire().getEmail(), subject, body);
+                    }
                     break;
                 case PUSH:
-                    // Simulate push notification
+                    // Broadcast via WebSocket for in-app notification
+                    if (notification.getDestinataire() != null && notification.getDestinataire().getId() != null) {
+                        String topic = "/topic/notifications/" + notification.getDestinataire().getId();
+                        simpMessagingTemplate.convertAndSend(topic, notification);
+                    }
                     break;
                 case SMS:
-                    // Simulate SMS sending
+                    // TODO: Integrate with SMS service provider
                     break;
             }
             notification.setStatut(Notification.Statut.ENVOYE);
