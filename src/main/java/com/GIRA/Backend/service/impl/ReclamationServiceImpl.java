@@ -41,6 +41,7 @@ import com.GIRA.Backend.service.interfaces.FichierService;
 import com.GIRA.Backend.service.interfaces.CommentaireService;
 import com.GIRA.Backend.service.interfaces.NotificationService;
 import com.GIRA.Backend.Entities.Fichier;
+import com.GIRA.Backend.Entities.Notification;
 
 /**
  * Implementation of ReclamationService.
@@ -408,62 +409,108 @@ public class ReclamationServiceImpl implements ReclamationService {
         if (request.getDescription() != null) reclamation.setDescription(request.getDescription());
         if (request.getPriorite() != null) {
             try {
-                    Reclamation.Priorite oldPriorite = reclamation.getPriorite();
+                Reclamation.Priorite oldPriorite = reclamation.getPriorite();
                 reclamation.setPriorite(Reclamation.Priorite.valueOf(request.getPriorite()));
-                    // Log priority change
-                    if (oldPriorite != reclamation.getPriorite()) {
-                        Historique hist = new Historique();
-                        hist.setReclamation(reclamation);
-                        hist.setUtilisateur(user);
-                        hist.setAction("CHANGEMENT_PRIORITE");
-                        hist.setAncienneValeur(oldPriorite != null ? oldPriorite.name() : null);
-                        hist.setNouvelleValeur(reclamation.getPriorite().name());
-                        hist.setDateAction(LocalDateTime.now());
-                        hist.setCommentaire("Changement de priorité par " + role);
-                        historiqueService.addHistorique(hist);
+                // Log priority change
+                if (oldPriorite != reclamation.getPriorite()) {
+                    Historique hist = new Historique();
+                    hist.setReclamation(reclamation);
+                    hist.setUtilisateur(user);
+                    hist.setAction("CHANGEMENT_PRIORITE");
+                    hist.setAncienneValeur(oldPriorite != null ? oldPriorite.name() : null);
+                    hist.setNouvelleValeur(reclamation.getPriorite().name());
+                    hist.setDateAction(LocalDateTime.now());
+                    hist.setCommentaire("Changement de priorité par " + role);
+                    historiqueService.addHistorique(hist);
+                    // --- Priority change notification (to owner) ---
+                    User owner = reclamation.getUtilisateur();
+                    if (owner != null) {
+                        Notification notifUser = new Notification();
+                        notifUser.setDestinataire(owner);
+                        notifUser.setType(Notification.Type.PUSH);
+                        notifUser.setSujet("Priorité de votre réclamation modifiée");
+                        notifUser.setContenu("La priorité de votre réclamation '" + reclamation.getTitre() + "' est maintenant : " + reclamation.getPriorite().name());
+                        notifUser.setReclamation(reclamation);
+                        notificationService.sendNotification(notifUser);
                     }
+                }
             } catch (IllegalArgumentException e) {
                 throw new BadRequestException("Priorité invalide");
             }
         }
         if (request.getStatut() != null) {
             try {
-                    Reclamation.Statut oldStatut = reclamation.getStatut();
-                    reclamation.changerStatut(Reclamation.Statut.valueOf(request.getStatut()), "Mise à jour par " + role);
-                    // Log status change
-                    if (oldStatut != reclamation.getStatut()) {
-                        Historique hist = new Historique();
-                        hist.setReclamation(reclamation);
-                        hist.setUtilisateur(user);
-                        hist.setAction("CHANGEMENT_STATUT");
-                        hist.setAncienneValeur(oldStatut != null ? oldStatut.name() : null);
-                        hist.setNouvelleValeur(reclamation.getStatut().name());
-                        hist.setDateAction(LocalDateTime.now());
-                        hist.setCommentaire("Changement de statut par " + role);
-                        historiqueService.addHistorique(hist);
+                Reclamation.Statut oldStatut = reclamation.getStatut();
+                reclamation.changerStatut(Reclamation.Statut.valueOf(request.getStatut()), "Mise à jour par " + role);
+                // Log status change
+                if (oldStatut != reclamation.getStatut()) {
+                    Historique hist = new Historique();
+                    hist.setReclamation(reclamation);
+                    hist.setUtilisateur(user);
+                    hist.setAction("CHANGEMENT_STATUT");
+                    hist.setAncienneValeur(oldStatut != null ? oldStatut.name() : null);
+                    hist.setNouvelleValeur(reclamation.getStatut().name());
+                    hist.setDateAction(LocalDateTime.now());
+                    hist.setCommentaire("Changement de statut par " + role);
+                    historiqueService.addHistorique(hist);
+                    // --- Status change notification (to owner) ---
+                    User owner = reclamation.getUtilisateur();
+                    if (owner != null) {
+                        Notification notifUser = new Notification();
+                        notifUser.setDestinataire(owner);
+                        notifUser.setType(Notification.Type.PUSH);
+                        notifUser.setSujet("Mise à jour du statut de votre réclamation");
+                        notifUser.setContenu("Le statut de votre réclamation '" + reclamation.getTitre() + "' est passé à : " + reclamation.getStatut().name());
+                        notifUser.setReclamation(reclamation);
+                        notificationService.sendNotification(notifUser);
+
+                        Notification notifUserEmail = new Notification();
+                        notifUserEmail.setDestinataire(owner);
+                        notifUserEmail.setType(Notification.Type.EMAIL);
+                        notifUserEmail.setSujet("[GIRA] Statut réclamation mis à jour");
+                        notifUserEmail.setContenu("Bonjour " + owner.getPrenom() + ",\n\nLe statut de votre réclamation '" + reclamation.getTitre() + "' a été mis à jour : " + reclamation.getStatut().name() + ".\n\nCordialement,\nGIRA");
+                        notifUserEmail.setReclamation(reclamation);
+                        notificationService.sendNotification(notifUserEmail);
                     }
+                }
             } catch (IllegalArgumentException e) {
                 throw new BadRequestException("Statut invalide");
             }
         }
         if (request.getAgentAssigneId() != null) {
-                User oldAgent = reclamation.getAgentAssigne();
+            User oldAgent = reclamation.getAgentAssigne();
             User agent = userService.getUserById(UUID.fromString(request.getAgentAssigneId()));
             reclamation.setAgentAssigne(agent);
-                reclamation.assigner(agent.getId());
-                // Log assignment change
-                if (oldAgent == null || !oldAgent.getId().equals(agent.getId())) {
-                    Historique hist = new Historique();
-                    hist.setReclamation(reclamation);
-                    hist.setUtilisateur(user);
-                    hist.setAction("ASSIGNATION_AGENT");
-                    hist.setAncienneValeur(oldAgent != null ? oldAgent.getNom() + " " + oldAgent.getPrenom() : null);
-                    hist.setNouvelleValeur(agent.getNom() + " " + agent.getPrenom());
-                    hist.setDateAction(LocalDateTime.now());
-                    hist.setCommentaire("Assignation à l'agent par " + role);
-                    historiqueService.addHistorique(hist);
-                }
+            reclamation.assigner(agent.getId());
+            // Log assignment change
+            if (oldAgent == null || !oldAgent.getId().equals(agent.getId())) {
+                Historique hist = new Historique();
+                hist.setReclamation(reclamation);
+                hist.setUtilisateur(user);
+                hist.setAction("ASSIGNATION_AGENT");
+                hist.setAncienneValeur(oldAgent != null ? oldAgent.getNom() + " " + oldAgent.getPrenom() : null);
+                hist.setNouvelleValeur(agent.getNom() + " " + agent.getPrenom());
+                hist.setDateAction(LocalDateTime.now());
+                hist.setCommentaire("Assignation à l'agent par " + role);
+                historiqueService.addHistorique(hist);
+                // --- Assignment notification ---
+                Notification notifAgent = new Notification();
+                notifAgent.setDestinataire(agent);
+                notifAgent.setType(Notification.Type.PUSH);
+                notifAgent.setSujet("Nouvelle réclamation assignée");
+                notifAgent.setContenu("Vous avez été assigné à la réclamation : " + reclamation.getTitre());
+                notifAgent.setReclamation(reclamation);
+                notificationService.sendNotification(notifAgent);
+
+                Notification notifAgentEmail = new Notification();
+                notifAgentEmail.setDestinataire(agent);
+                notifAgentEmail.setType(Notification.Type.EMAIL);
+                notifAgentEmail.setSujet("[GIRA] Nouvelle réclamation assignée");
+                notifAgentEmail.setContenu("Bonjour " + agent.getPrenom() + ",\n\nVous avez été assigné à la réclamation : '" + reclamation.getTitre() + "'.\nMerci de la traiter dans les meilleurs délais.\n\nCordialement,\nGIRA");
+                notifAgentEmail.setReclamation(reclamation);
+                notificationService.sendNotification(notifAgentEmail);
             }
+        }
             // === FILES: Add/Remove ===
             if (request.getFichiersToAdd() != null) {
                 for (String fileId : request.getFichiersToAdd()) {
@@ -483,12 +530,6 @@ public class ReclamationServiceImpl implements ReclamationService {
                     }
                 }
             }
-            // === NOTIFICATIONS: Trigger stub ===
-            try {
-                notificationService.sendNotification(null); // TODO: Build and send real notification
-            } catch (Exception e) {
-                // Log or ignore for now
-            }
         }
 
         // === USER: Only satisfaction/comment after resolution ===
@@ -506,6 +547,16 @@ public class ReclamationServiceImpl implements ReclamationService {
                     hist.setDateAction(LocalDateTime.now());
                     hist.setCommentaire("Évaluation de la réclamation par le passager");
                     historiqueService.addHistorique(hist);
+                    // Notify agent/admin of evaluation
+                    if (reclamation.getAgentAssigne() != null) {
+                        Notification notifAgent = new Notification();
+                        notifAgent.setDestinataire(reclamation.getAgentAssigne());
+                        notifAgent.setType(Notification.Type.PUSH);
+                        notifAgent.setSujet("Nouvelle évaluation reçue");
+                        notifAgent.setContenu("La réclamation '" + reclamation.getTitre() + "' a été évaluée par le passager.");
+                        notifAgent.setReclamation(reclamation);
+                        notificationService.sendNotification(notifAgent);
+                    }
                 }
             } else {
                 throw new AccessDeniedException("Vous ne pouvez évaluer qu'une réclamation résolue ou fermée.");
