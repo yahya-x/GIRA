@@ -41,8 +41,14 @@ services:
       postgres:
         condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     # No restart policy for tests (should run once and exit)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 30s
 
   # ================================
   # DATABASE SERVICE (TEST)
@@ -73,6 +79,12 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
     # No volumes (disposable queue for tests)
     # No restart policy for tests
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 20s
 
   # ================================
   # FRONTEND SERVICE (TODO)

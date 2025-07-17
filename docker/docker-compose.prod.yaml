@@ -43,14 +43,14 @@ services:
       postgres:
         condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
-    # TODO: Add healthcheck when implemented
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health/liveness"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # ================================
   # DATABASE SERVICE
@@ -85,6 +85,12 @@ services:
     volumes:
       - rabbitmq_prod_data:/var/lib/rabbitmq
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # ================================
   # FRONTEND SERVICE (TODO)

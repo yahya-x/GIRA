@@ -97,6 +97,9 @@ restart_gira() {
 status_gira() {
     print_status "GIRA containers status:"
     docker ps --filter "name=gira" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    
+    print_status "Health check status:"
+    docker ps --filter "name=gira" --format "table {{.Names}}\t{{.Health}}"
 }
 
 # Function to show logs
