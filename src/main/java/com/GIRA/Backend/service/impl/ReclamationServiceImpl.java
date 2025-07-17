@@ -42,6 +42,7 @@ import com.GIRA.Backend.service.interfaces.CommentaireService;
 import com.GIRA.Backend.service.interfaces.NotificationService;
 import com.GIRA.Backend.Entities.Fichier;
 import com.GIRA.Backend.Entities.Notification;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Implementation of ReclamationService.
@@ -390,6 +391,7 @@ public class ReclamationServiceImpl implements ReclamationService {
      * @throws RuntimeException if the complaint is not found or access is denied
      */
     @Override
+    @Transactional
     public ReclamationResponse updateReclamation(java.util.UUID id, ReclamationUpdateRequest request) {
         UserPrincipal userPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserById(userPrincipal.getId());
@@ -517,7 +519,9 @@ public class ReclamationServiceImpl implements ReclamationService {
                     Fichier fichier = fichierService.getFileById(UUID.fromString(fileId));
                     if (fichier != null) {
                         fichier.setReclamation(reclamation);
-                        fichierService.uploadFile(fichier); 
+                        fichierService.uploadFile(fichier);
+                        // Notify file added
+                        notifyFileChange(reclamation, fichier.getNomOriginal(), "ajouté");
                     }
                 }
             }
@@ -526,7 +530,9 @@ public class ReclamationServiceImpl implements ReclamationService {
                     Fichier fichier = fichierService.getFileById(UUID.fromString(fileId));
                     if (fichier != null && fichier.getReclamation() != null && fichier.getReclamation().getId().equals(reclamation.getId())) {
                         fichier.setReclamation(null);
-                        fichierService.uploadFile(fichier); 
+                        fichierService.uploadFile(fichier);
+                        // Notify file removed
+                        notifyFileChange(reclamation, fichier.getNomOriginal(), "supprimé");
                     }
                 }
             }
@@ -567,6 +573,85 @@ public class ReclamationServiceImpl implements ReclamationService {
         reclamation.setDateModification(java.time.LocalDateTime.now());
         Reclamation saved = reclamationRepository.save(reclamation);
         return ReclamationMapper.toResponse(saved, fichierService, commentaireService, notificationService);
+    }
+
+    /**
+     * Escalates a complaint to a supervisor and notifies relevant parties.
+     *
+     * @param reclamationId the ID of the complaint to escalate
+     * @param supervisorId the ID of the supervisor to escalate to
+     * @param reason the reason for escalation
+     * @param user the user performing the escalation
+     */
+    @Transactional
+    public void escalateReclamation(UUID reclamationId, UUID supervisorId, String reason, User user) {
+        Reclamation reclamation = reclamationRepository.findById(reclamationId)
+            .orElseThrow(() -> new ResourceNotFoundException("Reclamation non trouvée"));
+        reclamation.escalader(supervisorId, reason);
+        reclamationRepository.save(reclamation);
+
+        // Notify owner
+        Notification notifOwner = new Notification();
+        notifOwner.setDestinataire(reclamation.getUtilisateur());
+        notifOwner.setType(Notification.Type.PUSH);
+        notifOwner.setSujet("Votre réclamation a été escaladée");
+        notifOwner.setContenu("Votre réclamation '" + reclamation.getTitre() + "' a été escaladée pour la raison : " + reason);
+        notifOwner.setReclamation(reclamation);
+        notificationService.sendNotification(notifOwner);
+
+        // Notify assigned agent (if any)
+        if (reclamation.getAgentAssigne() != null) {
+            Notification notifAgent = new Notification();
+            notifAgent.setDestinataire(reclamation.getAgentAssigne());
+            notifAgent.setType(Notification.Type.PUSH);
+            notifAgent.setSujet("Réclamation escaladée");
+            notifAgent.setContenu("La réclamation '" + reclamation.getTitre() + "' que vous traitez a été escaladée.");
+            notifAgent.setReclamation(reclamation);
+            notificationService.sendNotification(notifAgent);
+        }
+
+        // Notify supervisor (if needed)
+        User supervisor = userService.getUserById(supervisorId);
+        if (supervisor != null) {
+            Notification notifSupervisor = new Notification();
+            notifSupervisor.setDestinataire(supervisor);
+            notifSupervisor.setType(Notification.Type.PUSH);
+            notifSupervisor.setSujet("Nouvelle réclamation escaladée");
+            notifSupervisor.setContenu("Une réclamation a été escaladée à votre attention : '" + reclamation.getTitre() + "'. Raison : " + reason);
+            notifSupervisor.setReclamation(reclamation);
+            notificationService.sendNotification(notifSupervisor);
+        }
+    }
+
+    /**
+     * Notifies relevant parties when a file is added or removed from a complaint.
+     *
+     * @param reclamation the complaint entity
+     * @param fileName the name of the file added/removed
+     * @param action "ajouté" or "supprimé"
+     */
+    private void notifyFileChange(Reclamation reclamation, String fileName, String action) {
+        String message = "Un fichier a été " + action + " à la réclamation '" + reclamation.getTitre() + "': " + fileName;
+
+        // Notify owner
+        Notification notifOwner = new Notification();
+        notifOwner.setDestinataire(reclamation.getUtilisateur());
+        notifOwner.setType(Notification.Type.PUSH);
+        notifOwner.setSujet("Fichier " + action + " à votre réclamation");
+        notifOwner.setContenu(message);
+        notifOwner.setReclamation(reclamation);
+        notificationService.sendNotification(notifOwner);
+
+        // Notify assigned agent (if any)
+        if (reclamation.getAgentAssigne() != null) {
+            Notification notifAgent = new Notification();
+            notifAgent.setDestinataire(reclamation.getAgentAssigne());
+            notifAgent.setType(Notification.Type.PUSH);
+            notifAgent.setSujet("Fichier " + action + " à une réclamation assignée");
+            notifAgent.setContenu(message);
+            notifAgent.setReclamation(reclamation);
+            notificationService.sendNotification(notifAgent);
+        }
     }
 
     /**
