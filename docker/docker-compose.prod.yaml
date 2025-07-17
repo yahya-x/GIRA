@@ -1,0 +1,131 @@
+# ================================
+# DOCKER COMPOSE: PRODUCTION
+# ================================
+# This file is optimized for production with:
+# - Minimal exposed ports for security
+# - Production-optimized configurations
+# - Restart policies for high availability
+# - No debug features enabled
+
+services:
+  # ================================
+  # BACKEND SERVICE
+  # ================================
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: gira-backend-prod
+    ports:
+      - "8081:8081"  # Only necessary port exposed
+    environment:
+      # Database Configuration
+      DB_URL: jdbc:postgresql://postgres:5432/gira_db
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET}
+      
+      # Email Configuration
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASS: ${MAIL_PASS}
+      
+      # Frontend URL
+      FRONTEND_URL: ${FRONTEND_URL}
+      
+      # Spring Boot Configuration
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      LOGGING_LEVEL_COM_GIRA_BACKEND: INFO  # Limited logs for production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    restart: unless-stopped
+    # TODO: Add healthcheck when implemented
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+
+  # ================================
+  # DATABASE SERVICE
+  # ================================
+  postgres:
+    image: postgres:17
+    container_name: gira-postgres-prod
+    environment:
+      POSTGRES_DB: gira_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    # No ports exposed for security (internal communication only)
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ================================
+  # MESSAGE QUEUE SERVICE
+  # ================================
+  rabbitmq:
+    image: rabbitmq:latest
+    container_name: gira-rabbitmq-prod
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    # No ports exposed for security (internal communication only)
+    volumes:
+      - rabbitmq_prod_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  # ================================
+  # FRONTEND SERVICE (TODO)
+  # ================================
+  # TODO: Add frontend service when frontend is implemented
+  # frontend:
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: ../docker/Dockerfile.frontend
+  #   container_name: gira-frontend-prod
+  #   ports:
+  #     - "80:80"  # or "443:443" for HTTPS
+  #   environment:
+  #     REACT_APP_API_URL: http://backend:8081
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped
+
+  # ================================
+  # REVERSE PROXY (TODO)
+  # ================================
+  # TODO: Add nginx or traefik for load balancing and SSL termination
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: gira-nginx-prod
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - backend
+  #     - frontend
+  #   restart: unless-stopped
+
+# ================================
+# VOLUMES
+# ================================
+volumes:
+  postgres_prod_data:
+    driver: local
+  rabbitmq_prod_data:
+    driver: local 
