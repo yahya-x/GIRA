@@ -48,6 +48,8 @@ services:
       rabbitmq:
         condition: service_started
     restart: unless-stopped
+    networks:
+      - gira-network
 
   # ================================
   # DATABASE SERVICE
@@ -69,6 +71,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - gira-network
 
   # ================================
   # MESSAGE QUEUE SERVICE
@@ -85,6 +89,8 @@ services:
     volumes:
       - rabbitmq_dev_data:/var/lib/rabbitmq
     restart: unless-stopped
+    networks:
+      - gira-network
 
   # ================================
   # FRONTEND SERVICE (TODO)
@@ -103,6 +109,17 @@ services:
   #     - ../frontend:/app/src:ro
   #   depends_on:
   #     - backend
+
+# ================================
+# NETWORKS
+# ================================
+networks:
+  gira-network:
+    driver: bridge
+    name: gira-dev-network
+    labels:
+      - "project=gira"
+      - "environment=development"
 
 # ================================
 # VOLUMES

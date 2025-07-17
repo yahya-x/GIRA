@@ -13,14 +13,23 @@ docker/
 ├── .env.dev                    # Variables d'environnement pour le dev
 ├── .env.prod                   # Variables d'environnement pour la prod
 ├── .env.test                   # Variables d'environnement pour les tests
+├── scripts/
+│   └── gira-dev.sh             # Script de gestion de l'environnement dev
 └── README.md                   # Ce fichier
 ```
 
 ## 🚀 Utilisation
 
-### Développement
+### Développement (Recommandé)
 ```bash
-# Lancer l'environnement de développement
+# Utiliser le script de gestion (plus simple)
+cd docker/scripts
+./gira-dev.sh start --isolate  # Démarre GIRA et arrête les autres conteneurs
+./gira-dev.sh status           # Voir le statut des conteneurs GIRA
+./gira-dev.sh logs backend     # Voir les logs du backend
+./gira-dev.sh stop             # Arrêter GIRA
+
+# Ou utiliser les commandes Docker Compose directement
 docker compose -f docker/docker-compose.dev.yaml --env-file docker/.env.dev up --build
 
 # Lancer en arrière-plan
