@@ -1,0 +1,128 @@
+# ================================
+# DOCKER COMPOSE: TESTING
+# ================================
+# This file is optimized for testing with:
+# - Disposable databases (no persistent volumes)
+# - Test-specific configurations
+# - Fast startup times
+# - Isolated test environment
+
+services:
+  # ================================
+  # BACKEND SERVICE
+  # ================================
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: gira-backend-test
+    environment:
+      # Database Configuration (test database)
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET}
+      
+      # Email Configuration (using Mailtrap for testing)
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASS: ${MAIL_PASS}
+      
+      # Frontend URL
+      FRONTEND_URL: ${FRONTEND_URL}
+      
+      # Spring Boot Configuration
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      LOGGING_LEVEL_COM_GIRA_BACKEND: WARN  # Minimal logs for tests
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    # No restart policy for tests (should run once and exit)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 30s
+
+  # ================================
+  # DATABASE SERVICE (TEST)
+  # ================================
+  postgres:
+    image: postgres:17
+    container_name: gira-postgres-test
+    environment:
+      POSTGRES_DB: gira_test_db  # Separate test database
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    # No volumes (disposable database for tests)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    # No restart policy for tests
+
+  # ================================
+  # MESSAGE QUEUE SERVICE (TEST)
+  # ================================
+  rabbitmq:
+    image: rabbitmq:latest
+    container_name: gira-rabbitmq-test
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    # No volumes (disposable queue for tests)
+    # No restart policy for tests
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 20s
+
+  # ================================
+  # FRONTEND SERVICE (TODO)
+  # ================================
+  # TODO: Add frontend service when frontend is implemented
+  # frontend:
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: ../docker/Dockerfile.frontend
+  #   container_name: gira-frontend-test
+  #   environment:
+  #     REACT_APP_API_URL: http://backend:8081
+  #     NODE_ENV: test
+  #   depends_on:
+  #     - backend
+  #   # No restart policy for tests
+
+  # ================================
+  # TEST RUNNER (TODO)
+  # ================================
+  # TODO: Add test runner service for integration tests
+  # test-runner:
+  #   build:
+  #     context: ../backend
+  #     dockerfile: ../docker/Dockerfile.test
+  #   container_name: gira-test-runner
+  #   environment:
+  #     DB_URL: jdbc:postgresql://postgres:5432/gira_test_db
+  #     DB_USER: ${DB_USER}
+  #     DB_PASSWORD: ${DB_PASSWORD}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     rabbitmq:
+  #       condition: service_started
+  #   command: ["./mvnw", "test"]
+
+# ================================
+# VOLUMES
+# ================================
+# No volumes for testing (disposable environment) 

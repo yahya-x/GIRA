@@ -1,0 +1,143 @@
+# ================================
+# DOCKER COMPOSE: DEVELOPMENT
+# ================================
+# This file is optimized for development with:
+# - All ports exposed for debugging
+# - Detailed logging
+# - Hot reload capabilities
+# - Development-specific configurations
+
+services:
+  # ================================
+  # BACKEND SERVICE
+  # ================================
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: gira-backend-dev
+    ports:
+      - "8081:8081"  # Expose port for debugging and API access
+    environment:
+      # Database Configuration
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET}
+      
+      # Email Configuration
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASS: ${MAIL_PASS}
+      
+      # Frontend URL
+      FRONTEND_URL: ${FRONTEND_URL}
+      
+      # Spring Boot Configuration
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      LOGGING_LEVEL_COM_GIRA_BACKEND: DEBUG  # Detailed logs for development
+    # TODO: Uncomment volumes for hot reload when frontend is added
+    # volumes:
+    #   - ../backend:/app/src:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gira-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health/liveness"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ================================
+  # DATABASE SERVICE
+  # ================================
+  postgres:
+    image: postgres:17
+    container_name: gira-postgres-dev
+    environment:
+      POSTGRES_DB: gira_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5433:5432"  # Expose for direct database access
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gira-network
+
+  # ================================
+  # MESSAGE QUEUE SERVICE
+  # ================================
+  rabbitmq:
+    image: rabbitmq:latest
+    container_name: gira-rabbitmq-dev
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management interface
+    volumes:
+      - rabbitmq_dev_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    networks:
+      - gira-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ================================
+  # FRONTEND SERVICE (TODO)
+  # ================================
+  # TODO: Add frontend service when frontend is implemented
+  # frontend:
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: ../docker/Dockerfile.frontend
+  #   container_name: gira-frontend-dev
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     REACT_APP_API_URL: http://localhost:8081
+  #   volumes:
+  #     - ../frontend:/app/src:ro
+  #   depends_on:
+  #     - backend
+
+# ================================
+# NETWORKS
+# ================================
+networks:
+  gira-network:
+    driver: bridge
+    name: gira-dev-network
+    labels:
+      - "project=gira"
+      - "environment=development"
+
+# ================================
+# VOLUMES
+# ================================
+volumes:
+  postgres_dev_data:
+    driver: local
+  rabbitmq_dev_data:
+    driver: local 

@@ -1,0 +1,167 @@
+# ================================
+# DOCKER COMPOSE: MONITORING
+# ================================
+# This file contains all monitoring services:
+# - Prometheus (metrics collection)
+# - Grafana (visualization)
+# - cAdvisor (container metrics)
+# - Node Exporter (host metrics)
+# - Postgres Exporter (database metrics)
+# - RabbitMQ Exporter (queue metrics)
+
+services:
+  # ================================
+  # PROMETHEUS (Metrics Collection)
+  # ================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: gira-prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - gira-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ================================
+  # GRAFANA (Visualization)
+  # ================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: gira-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+  
+    networks:
+      - gira-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ================================
+  # CADVISOR (Container Metrics)
+  # ================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: gira-cadvisor
+    ports:
+      - "8080:8080"
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - gira-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ================================
+  # NODE EXPORTER (Host Metrics)
+  # ================================
+  # node-exporter:
+  #   image: prom/node-exporter:latest
+  #   container_name: gira-node-exporter
+  #   ports:
+  #     - "9100:9100"
+  #   command:
+  #     - '--path.rootfs=/host'
+  #   network_mode: host
+  #   pid: host
+  #   restart: unless-stopped
+  #   volumes:
+  #     - '/:/host:ro,rslave'
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/-/healthy"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # ================================
+  # POSTGRES EXPORTER (Database Metrics)
+  # ================================
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: gira-postgres-exporter
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/gira_db?sslmode=disable"
+    networks:
+      - gira-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9187/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ================================
+  # RABBITMQ EXPORTER (Queue Metrics)
+  # ================================
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: gira-rabbitmq-exporter
+    ports:
+      - "9419:9419"
+    environment:
+      RABBIT_URL: "http://rabbitmq:15672"
+      RABBIT_USER: "${RABBITMQ_USER}"
+      RABBIT_PASSWORD: "${RABBITMQ_PASS}"
+    networks:
+      - gira-network
+    restart: unless-stopped
+    depends_on:
+      - rabbitmq
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9419/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# ================================
+# VOLUMES
+# ================================
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
