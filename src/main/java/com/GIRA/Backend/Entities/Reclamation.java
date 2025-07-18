@@ -96,6 +96,7 @@ public class Reclamation extends BaseEntity {
 
     /**
      * Indicates if the SLA has been breached (true if overdue and not resolved).
+     * Date echeance breached 
      */
     @Column(name = "sla_breached")
     private boolean slaBreached = false;

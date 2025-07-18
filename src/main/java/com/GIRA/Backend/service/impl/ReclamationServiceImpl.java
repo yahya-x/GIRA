@@ -46,6 +46,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.scheduling.annotation.Scheduled;
+import java.util.stream.Stream;
 
 /**
  * Implementation of ReclamationService.
@@ -738,4 +740,84 @@ public class ReclamationServiceImpl implements ReclamationService {
         return reclamationRepository.findWithFilters(statut, priorite, categorieId, sousCategorieId, agentId, utilisateurId, pageable);
     }
 
+    /**
+     * Scheduled SLA enforcement: checks for overdue complaints and triggers notifications.
+     * Runs every hour by default (configurable via 'gira.sla.check.cron').
+     * Notifies assigned agent and supervisor if available.
+     */
+    @Scheduled(cron = "${gira.sla.check.cron:0 0 * * * *}") // Default: every hour
+    public void enforceSlaBreaches() {
+        List<Reclamation> overdue = reclamationRepository.findAll().stream()
+            .filter(r -> !r.isSlaBreached())
+            .filter(r -> r.getDateEcheance() != null && r.getDateEcheance().isBefore(LocalDateTime.now()))
+            .filter(r -> r.getStatut() != Reclamation.Statut.RESOLUE && r.getStatut() != Reclamation.Statut.FERMEE)
+            .collect(Collectors.toList());
+        // Find all supervisors
+        List<User> supervisors = userRepository.findAll().stream()
+            .filter(u -> u.getRole() != null && "SUPERVISEUR".equalsIgnoreCase(u.getRole().getNom()))
+            .collect(Collectors.toList());
+        for (Reclamation r : overdue) {
+            r.setSlaBreached(true);
+            User agent = r.getAgentAssigne();
+            if (!supervisors.isEmpty()) {
+                User assignedSupervisor = supervisors.get(0); // Assign to first supervisor
+                r.setAgentAssigne(assignedSupervisor);
+                r.setPriorite(Reclamation.Priorite.URGENTE);
+                // Log escalation in history
+                Historique hist = new Historique();
+                hist.setReclamation(r);
+                hist.setUtilisateur(assignedSupervisor);
+                hist.setAction("ESCALADE_SLA");
+                hist.setAncienneValeur(agent != null ? agent.getNom() + " " + agent.getPrenom() : null);
+                hist.setNouvelleValeur(assignedSupervisor.getNom() + " " + assignedSupervisor.getPrenom());
+                hist.setDateAction(LocalDateTime.now());
+                hist.setCommentaire("Escalade automatique suite à un dépassement de SLA");
+                historiqueService.addHistorique(hist);
+                // Notify all supervisors (PUSH + EMAIL)
+                for (User supervisor : supervisors) {
+                    Notification notifSup = new Notification();
+                    notifSup.setDestinataire(supervisor);
+                    notifSup.setType(Notification.Type.PUSH);
+                    notifSup.setSujet("SLA Breach: Complaint auto-escalated");
+                    notifSup.setContenu("The complaint '" + r.getTitre() + "' has been auto-escalated to supervisor due to SLA breach.");
+                    notifSup.setReclamation(r);
+                    notificationService.sendNotification(notifSup);
+                    Notification notifSupEmail = new Notification();
+                    notifSupEmail.setDestinataire(supervisor);
+                    notifSupEmail.setType(Notification.Type.EMAIL);
+                    notifSupEmail.setSujet("[GIRA] Complaint auto-escalated to supervisor");
+                    notifSupEmail.setContenu("Bonjour " + supervisor.getPrenom() + ",\n\nLa réclamation '" + r.getTitre() + "' a été automatiquement escaladée à un superviseur suite à un dépassement de SLA.\nMerci de la traiter en urgence.\n\nCordialement,\nGIRA");
+                    notifSupEmail.setReclamation(r);
+                    notificationService.sendNotification(notifSupEmail);
+                }
+                // Notify previous agent (EMAIL)
+                if (agent != null) {
+                    Notification notifAgentEmail = new Notification();
+                    notifAgentEmail.setDestinataire(agent);
+                    notifAgentEmail.setType(Notification.Type.EMAIL);
+                    notifAgentEmail.setSujet("[GIRA] Complaint auto-escalated to supervisor");
+                    notifAgentEmail.setContenu("Bonjour " + agent.getPrenom() + ",\n\nLa réclamation '" + r.getTitre() + "' a été automatiquement escaladée à un superviseur suite à un dépassement de SLA.\n\nCordialement,\nGIRA");
+                    notifAgentEmail.setReclamation(r);
+                    notificationService.sendNotification(notifAgentEmail);
+                }
+            } else if (agent != null) {
+                // No supervisor: just notify agent (PUSH + EMAIL)
+                Notification notif = new Notification();
+                notif.setDestinataire(agent);
+                notif.setType(Notification.Type.PUSH);
+                notif.setSujet("SLA Breach: Complaint overdue");
+                notif.setContenu("The complaint '" + r.getTitre() + "' has breached its SLA deadline and requires urgent attention.");
+                notif.setReclamation(r);
+                notificationService.sendNotification(notif);
+                Notification notifEmail = new Notification();
+                notifEmail.setDestinataire(agent);
+                notifEmail.setType(Notification.Type.EMAIL);
+                notifEmail.setSujet("[GIRA] Complaint overdue (SLA breach)");
+                notifEmail.setContenu("Bonjour " + agent.getPrenom() + ",\n\nLa réclamation '" + r.getTitre() + "' a dépassé son délai SLA et nécessite une attention urgente.\n\nCordialement,\nGIRA");
+                notifEmail.setReclamation(r);
+                notificationService.sendNotification(notifEmail);
+            }
+            reclamationRepository.save(r);
+        }
+    }
 } 
