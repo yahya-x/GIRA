@@ -43,6 +43,9 @@ import com.GIRA.Backend.service.interfaces.NotificationService;
 import com.GIRA.Backend.Entities.Fichier;
 import com.GIRA.Backend.Entities.Notification;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Implementation of ReclamationService.
@@ -304,6 +307,54 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     // === DTO-based methods for controller ===
     /**
+     * SLA Matrix: Maps (category, priority) to SLA duration in hours.
+     * This can be externalized to config or DB in the future.
+     */
+    private static final Map<String, Map<String, Integer>> SLA_MATRIX = new HashMap<>();
+    static {
+        // Example categories and priorities (adjust as needed)
+        // Key: category name (lowercase), Value: map of priority to hours
+        Map<String, Integer> baggage = new HashMap<>();
+        baggage.put("NORMALE", 24);
+        baggage.put("URGENTE", 8);
+        SLA_MATRIX.put("baggage", baggage);
+
+        Map<String, Integer> security = new HashMap<>();
+        security.put("CRITIQUE", 2);
+        security.put("NORMALE", 12);
+        SLA_MATRIX.put("security", security);
+
+        Map<String, Integer> facilities = new HashMap<>();
+        facilities.put("NORMALE", 48);
+        facilities.put("URGENTE", 16);
+        SLA_MATRIX.put("facilities", facilities);
+
+        Map<String, Integer> customerService = new HashMap<>();
+        customerService.put("NORMALE", 24);
+        SLA_MATRIX.put("customer service", customerService);
+
+        Map<String, Integer> lostAndFound = new HashMap<>();
+        lostAndFound.put("NORMALE", 72);
+        SLA_MATRIX.put("lost & found", lostAndFound);
+    }
+    private static final int DEFAULT_SLA_HOURS = 48;
+
+    /**
+     * Looks up the SLA duration (in hours) for a given category and priority.
+     * @param categoryName the name of the category (case-insensitive)
+     * @param priority the priority (enum name)
+     * @return SLA duration in hours
+     */
+    private int getSlaDurationHours(String categoryName, String priority) {
+        if (categoryName == null || priority == null) return DEFAULT_SLA_HOURS;
+        Map<String, Integer> priorityMap = SLA_MATRIX.get(categoryName.trim().toLowerCase());
+        if (priorityMap != null && priorityMap.containsKey(priority)) {
+            return priorityMap.get(priority);
+        }
+        return DEFAULT_SLA_HOURS;
+    }
+
+    /**
      * Creates a new complaint (reclamation) for the currently authenticated user.
      * Maps the request DTO to an entity, performs category and subcategory lookups,
      * and saves the complaint. Returns a response DTO with the created complaint's details.
@@ -323,6 +374,15 @@ public class ReclamationServiceImpl implements ReclamationService {
             sousCategorie = sousCategorieService.getSousCategorieById(request.getSousCategorieId()).orElse(null);
         }
         Reclamation reclamation = ReclamationMapper.fromCreateRequest(request, user, categorie, sousCategorie);
+
+        // --- SLA Logic: Set SLA deadline based on category and priority ---
+        String categoryName = categorie.getNom(); // Assumes Categorie has getNom()
+        String priority = reclamation.getPriorite() != null ? reclamation.getPriorite().name() : null;
+        int slaHours = getSlaDurationHours(categoryName, priority);
+        reclamation.setDateEcheance(reclamation.getDateCreation().plus(slaHours, ChronoUnit.HOURS));
+        reclamation.setSlaBreached(false);
+        // --- End SLA Logic ---
+
         Reclamation saved = reclamationRepository.save(reclamation);
         return ReclamationMapper.toResponse(saved, fichierService, commentaireService, notificationService);
     }

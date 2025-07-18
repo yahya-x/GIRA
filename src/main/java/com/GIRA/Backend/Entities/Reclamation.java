@@ -88,10 +88,17 @@ public class Reclamation extends BaseEntity {
     private LocalDateTime dateResolution;
 
     /**
-     * Due date for resolution.
+     * SLA deadline for resolution (Service Level Agreement).
+     * This is the date/time by which the complaint must be resolved according to business rules.
      */
     @Column(name = "date_echeance")
     private LocalDateTime dateEcheance;
+
+    /**
+     * Indicates if the SLA has been breached (true if overdue and not resolved).
+     */
+    @Column(name = "sla_breached")
+    private boolean slaBreached = false;
 
     /**
      * Geographical location (WKT or GeoJSON as String).
@@ -337,6 +344,14 @@ public class Reclamation extends BaseEntity {
     
     public LocalDateTime getDateEcheance() { return dateEcheance; }
     public void setDateEcheance(LocalDateTime dateEcheance) { this.dateEcheance = dateEcheance; }
+    
+    public boolean isSlaBreached() {
+        return slaBreached;
+    }
+
+    public void setSlaBreached(boolean slaBreached) {
+        this.slaBreached = slaBreached;
+    }
     
     public String getLocalisation() { return localisation; }
     public void setLocalisation(String localisation) { this.localisation = localisation; }
