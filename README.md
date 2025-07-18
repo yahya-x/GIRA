@@ -7,7 +7,7 @@ A robust, modern web application for managing passenger complaints and feedback 
 ## 🚀 Features
 
 - User registration, login, and profile management
-- Secure authentication with JWT and role-based access (Admin, Agent, Passager)
+- Secure authentication with JWT and role-based access (Admin, Agent, Passager, Superviseur)
 - Admin can create users with any role and full profile
 - Submit, track, and manage complaints (réclamations)
 - File upload/download for complaint attachments
@@ -15,6 +15,7 @@ A robust, modern web application for managing passenger complaints and feedback 
 - Admin dashboard for complaint resolution and analytics
 - RESTful API with DTO-based request/response models
 - Dockerized PostgreSQL database for easy setup
+- Monitoring with Prometheus and Grafana
 
 ---
 
@@ -24,6 +25,7 @@ A robust, modern web application for managing passenger complaints and feedback 
 - **Database:** PostgreSQL (Dockerized)
 - **Build Tool:** Maven
 - **Containerization:** Docker, Docker Compose
+- **Monitoring:** Prometheus, Grafana
 
 ---
 
@@ -42,26 +44,43 @@ git clone https://github.com/yahya-x/GIRA.git
 cd GIRA
 ```
 
-### Start the Database
+### Environment Variables
+
+Copy `.env.example` to `.env` in the project root and fill in the required values:
 
 ```sh
-docker compose up -d
+cp .env.example .env
 ```
+
+**Required variables:**
+- `DB_URL`, `DB_USER`, `DB_PASSWORD`
+- `JWT_SECRET`
+- `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS`
+- `FRONTEND_URL`
+
+> **Note:**
+> The `.env` file **must** be present in the project root for Docker Compose and `gira-dev.sh` to work. If services fail to start, check that `.env` exists and is correctly configured.
+
+### Start the Full Stack (Dev)
+
+Use the provided script for local development:
+
+
 
 ### Build and Run the Application
 
 ```sh
+cd backend
 ./mvnw clean package
 java -jar target/GIRA-0.0.1-SNAPSHOT.jar
 ```
 
-The application will be available at http://localhost:8080
 
 ---
 
 ## ⚙️ Configuration
 
-Edit `src/main/resources/application.properties` to adjust database, port, or security settings.
+Edit `backend/src/main/resources/application.properties` to adjust database, port, or security settings. Most settings are loaded from environment variables (see `.env`).
 
 **Default Admin Credentials:**
 - TODO: Set initial admin credentials or registration flow
@@ -71,8 +90,8 @@ Edit `src/main/resources/application.properties` to adjust database, port, or se
 ## 📚 API Documentation
 
 ### Swagger UI
-- [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
-- OpenAPI docs: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+- [http://localhost:8081/swagger-ui/index.html](http://localhost:8081/swagger-ui/index.html)
+- OpenAPI docs: [http://localhost:8081/v3/api-docs](http://localhost:8081/v3/api-docs)
 
 ### Authentication
 - All endpoints (except `/api/v1/auth/**`, `/api/public/**`, `/swagger-ui/**`, `/v3/api-docs/**`) require JWT authentication.
@@ -84,7 +103,7 @@ Edit `src/main/resources/application.properties` to adjust database, port, or se
 #### User Management
 - `POST /api/v1/auth/register` — Register as PASSAGER
 - `POST /api/v1/auth/login` — Login and receive JWT
-- `POST /api/users` — (Admin only) Create user with any role (PASSAGER, AGENT, ADMIN)
+- `POST /api/users` — (Admin only) Create user with any role (PASSAGER, AGENT, ADMIN, SUPERVISEUR)
 
 #### Complaints (Réclamations)
 - `POST /api/reclamations` — Submit a complaint (authenticated)
@@ -110,41 +129,24 @@ Edit `src/main/resources/application.properties` to adjust database, port, or se
 - `GET /api/dashboard/admin` — Admin dashboard (global stats)
 - `GET /api/dashboard/agent` — Agent dashboard (personal stats)
 
-### Example Requests
+---
 
-#### Register User (PASSAGER)
-```json
-POST /api/v1/auth/register
-{
-  "email": "user@example.com",
-  "password": "password123",
-  "username": "JohnDoe"
-}
+## 🧪 Testing
+
+- Test configs are in `backend/src/test/resources/application.properties`.
+- Run tests with:
+
+```sh
+cd backend
+./mvnw test
 ```
 
-#### Login
-```json
-POST /api/v1/auth/login
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
+---
 
-#### Admin Create User
-```json
-POST /api/users
-Authorization: Bearer <admin-token>
-{
-  "email": "agent@example.com",
-  "password": "agentpass",
-  "username": "Agent007",
-  "role": "AGENT",
-  "prenom": "James",
-  "telephone": "+1234567890",
-  "langue": "fr"
-}
-```
+## 🐳 Docker Compose
+
+- Compose files are in the `docker/` directory.
+- Use `gira-dev.sh` for dev/monitoring, or run compose files directly.
 
 ---
 
@@ -156,7 +158,7 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 
 ## 📝 License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the .
 
 ---
 
