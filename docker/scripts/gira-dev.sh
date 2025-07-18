@@ -79,6 +79,31 @@ start_gira() {
     echo "  - RabbitMQ Management: http://localhost:15672"
 }
 
+# Function to start monitoring
+start_monitoring() {
+    print_status "Starting monitoring stack..."
+    docker compose -f "../docker-compose.monitoring.yaml" --env-file "$ENV_FILE" up -d
+    
+    print_success "Monitoring stack started!"
+    print_status "Monitoring services available:"
+    echo "  - Prometheus: http://localhost:9090"
+    echo "  - Grafana: http://localhost:3000 (admin/admin)"
+    echo "  - cAdvisor: http://localhost:8080"
+}
+
+# Function to start everything (GIRA + monitoring)
+start_all() {
+    print_status "Starting GIRA with monitoring..."
+    start_gira "$1"
+    start_monitoring
+    
+    print_success "All services started!"
+    print_status "Access your applications:"
+    echo "  - GIRA Backend: http://localhost:8081"
+    echo "  - Grafana Dashboard: http://localhost:3000"
+    echo "  - Prometheus: http://localhost:9090"
+}
+
 # Function to stop GIRA environment
 stop_gira() {
     print_status "Stopping GIRA development environment..."
@@ -123,10 +148,30 @@ clean_gira() {
     fi
 }
 
+# Function to start both dev and monitoring stacks ensemble
+start_all_compose() {
+    print_status "Starting GIRA dev + monitoring stacks..."
+    docker compose -f "$COMPOSE_FILE" -f "../docker-compose.monitoring.yaml" --env-file "$ENV_FILE" up -d --build
+    print_success "GIRA dev + monitoring started!"
+    print_status "Services available:"
+    echo "  - Backend API: http://localhost:8081"
+    echo "  - PostgreSQL: localhost:5433"
+    echo "  - RabbitMQ Management: http://localhost:15672"
+    echo "  - Prometheus: http://localhost:9090"
+    echo "  - Grafana: http://localhost:3000 (admin/admin)"
+    echo "  - cAdvisor: http://localhost:8080"
+}
+
 # Main script logic
 case "${1:-help}" in
     "start")
         start_gira "$2"
+        ;;
+    "monitoring")
+        start_monitoring
+        ;;
+    "start-all")
+        start_all "$2"
         ;;
     "stop")
         stop_gira
@@ -146,20 +191,26 @@ case "${1:-help}" in
     "isolate")
         start_gira --isolate
         ;;
+    "start-all-compose")
+        start_all_compose
+        ;;
     "help"|*)
         echo "GIRA Development Environment Manager"
         echo ""
         echo "Usage: $0 [command] [options]"
         echo ""
         echo "Commands:"
-        echo "  start [--isolate]  Start GIRA environment (--isolate stops other containers)"
-        echo "  stop               Stop GIRA environment"
-        echo "  restart            Restart GIRA environment"
-        echo "  status             Show GIRA containers status"
-        echo "  logs [service]     Show logs (default: backend)"
-        echo "  clean              Remove all GIRA containers, volumes, and images"
-        echo "  isolate            Start GIRA in isolated environment"
-        echo "  help               Show this help message"
+echo "  start [--isolate]  Start GIRA environment (--isolate stops other containers)"
+echo "  start-all-compose  Start GIRA dev + monitoring with both compose files"
+echo "  monitoring         Start monitoring stack (Prometheus + Grafana)"
+echo "  start-all [--isolate] Start GIRA + monitoring together"
+echo "  stop               Stop GIRA environment"
+echo "  restart            Restart GIRA environment"
+echo "  status             Show GIRA containers status"
+echo "  logs [service]     Show logs (default: backend)"
+echo "  clean              Remove all GIRA containers, volumes, and images"
+echo "  isolate            Start GIRA in isolated environment"
+echo "  help               Show this help message"
         echo ""
         echo "Examples:"
         echo "  $0 start           # Start GIRA normally"

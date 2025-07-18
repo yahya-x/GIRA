@@ -18,7 +18,7 @@ services:
     container_name: gira-backend-test
     environment:
       # Database Configuration (test database)
-      DB_URL: jdbc:postgresql://postgres:5432/gira_test_db
+      DB_URL: ${DB_URL}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       
