@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 
 # Project configuration
 COMPOSE_FILE="../docker-compose.dev.yaml"
-ENV_FILE="../.env"  # Standard Docker Compose env file in project root
+ENV_FILE="../.env.dev"  # Standard Docker Compose env file in project root
 PROJECT_NAME="gira"
 
 # Function to print colored output
