@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'gira-project'
+    orgId: 1
+    folder: 'GIRA'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

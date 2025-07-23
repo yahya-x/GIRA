@@ -51,3 +51,7 @@ HELP.md
 .factorypath
 .springBeans
 .sts4-cache
+.env
+.env.dev
+.env.prod
+.env.test
