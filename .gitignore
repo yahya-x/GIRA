@@ -55,3 +55,6 @@ HELP.md
 .env.dev
 .env.prod
 .env.test
+
+# Vite build cache
+frontend/.vite/
