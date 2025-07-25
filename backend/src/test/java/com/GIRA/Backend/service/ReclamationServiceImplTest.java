@@ -35,6 +35,7 @@ import com.GIRA.Backend.service.interfaces.HistoriqueService;
 import org.mockito.ArgumentCaptor;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
+import com.GIRA.Backend.Entities.Role;
 
 /**
  * Unit tests for ReclamationServiceImpl advanced filtering.
@@ -280,5 +281,48 @@ class ReclamationServiceImplTest {
         Notification notif = captor.getValue();
         assertEquals(Notification.Type.PUSH, notif.getType());
         assertEquals(agent, notif.getDestinataire());
+    }
+
+    @Test
+    void testEnforceSlaBreaches_MarksBreachedAndSendsNotifications() {
+        // Setup overdue complaint
+        User agent = new User();
+        agent.setId(UUID.randomUUID());
+        agent.setPrenom("AgentPrenom");
+        // Create supervisor user(s) with SUPERVISEUR role
+        User supervisor = new User();
+        supervisor.setId(UUID.randomUUID());
+        supervisor.setPrenom("SupervisorPrenom");
+        Role supervisorRole = new Role();
+        supervisorRole.setNom("SUPERVISEUR");
+        supervisor.setRole(supervisorRole);
+        // No setSuperviseur needed
+        Reclamation rec = new Reclamation();
+        rec.setId(UUID.randomUUID());
+        rec.setTitre("Overdue Complaint");
+        rec.setStatut(Reclamation.Statut.EN_COURS);
+        rec.setPriorite(Reclamation.Priorite.NORMALE);
+        rec.setAgentAssigne(agent);
+        rec.setDateEcheance(java.time.LocalDateTime.now().minusHours(2));
+        rec.setSlaBreached(false);
+        when(reclamationRepository.findAll()).thenReturn(List.of(rec));
+        when(userRepository.findAll()).thenReturn(List.of(supervisor));
+        // Call
+        reclamationService.enforceSlaBreaches();
+        // Verify complaint is marked as breached and saved
+        assertTrue(rec.isSlaBreached(), "Complaint should be marked as SLA breached");
+        verify(reclamationRepository).save(rec);
+        // Verify notifications sent to agent and supervisor
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationService, times(3)).sendNotification(captor.capture());
+        boolean agentNotified = false, supervisorPushNotified = false, supervisorEmailNotified = false;
+        for (Notification n : captor.getAllValues()) {
+            if (n.getDestinataire().equals(agent) && n.getType() == Notification.Type.EMAIL) agentNotified = true;
+            if (n.getDestinataire().equals(supervisor) && n.getType() == Notification.Type.PUSH) supervisorPushNotified = true;
+            if (n.getDestinataire().equals(supervisor) && n.getType() == Notification.Type.EMAIL) supervisorEmailNotified = true;
+        }
+        assertTrue(agentNotified, "Agent should receive EMAIL notification");
+        assertTrue(supervisorPushNotified, "Supervisor should receive PUSH notification");
+        assertTrue(supervisorEmailNotified, "Supervisor should receive EMAIL notification");
     }
 } 

@@ -42,6 +42,12 @@ import com.GIRA.Backend.service.interfaces.CommentaireService;
 import com.GIRA.Backend.service.interfaces.NotificationService;
 import com.GIRA.Backend.Entities.Fichier;
 import com.GIRA.Backend.Entities.Notification;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
+import org.springframework.scheduling.annotation.Scheduled;
+import java.util.stream.Stream;
 
 /**
  * Implementation of ReclamationService.
@@ -303,6 +309,54 @@ public class ReclamationServiceImpl implements ReclamationService {
 
     // === DTO-based methods for controller ===
     /**
+     * SLA Matrix: Maps (category, priority) to SLA duration in hours.
+     * This can be externalized to config or DB in the future.
+     */
+    private static final Map<String, Map<String, Integer>> SLA_MATRIX = new HashMap<>();
+    static {
+        // Example categories and priorities (adjust as needed)
+        // Key: category name (lowercase), Value: map of priority to hours
+        Map<String, Integer> baggage = new HashMap<>();
+        baggage.put("NORMALE", 24);
+        baggage.put("URGENTE", 8);
+        SLA_MATRIX.put("baggage", baggage);
+
+        Map<String, Integer> security = new HashMap<>();
+        security.put("CRITIQUE", 2);
+        security.put("NORMALE", 12);
+        SLA_MATRIX.put("security", security);
+
+        Map<String, Integer> facilities = new HashMap<>();
+        facilities.put("NORMALE", 48);
+        facilities.put("URGENTE", 16);
+        SLA_MATRIX.put("facilities", facilities);
+
+        Map<String, Integer> customerService = new HashMap<>();
+        customerService.put("NORMALE", 24);
+        SLA_MATRIX.put("customer service", customerService);
+
+        Map<String, Integer> lostAndFound = new HashMap<>();
+        lostAndFound.put("NORMALE", 72);
+        SLA_MATRIX.put("lost & found", lostAndFound);
+    }
+    private static final int DEFAULT_SLA_HOURS = 48;
+
+    /**
+     * Looks up the SLA duration (in hours) for a given category and priority.
+     * @param categoryName the name of the category (case-insensitive)
+     * @param priority the priority (enum name)
+     * @return SLA duration in hours
+     */
+    private int getSlaDurationHours(String categoryName, String priority) {
+        if (categoryName == null || priority == null) return DEFAULT_SLA_HOURS;
+        Map<String, Integer> priorityMap = SLA_MATRIX.get(categoryName.trim().toLowerCase());
+        if (priorityMap != null && priorityMap.containsKey(priority)) {
+            return priorityMap.get(priority);
+        }
+        return DEFAULT_SLA_HOURS;
+    }
+
+    /**
      * Creates a new complaint (reclamation) for the currently authenticated user.
      * Maps the request DTO to an entity, performs category and subcategory lookups,
      * and saves the complaint. Returns a response DTO with the created complaint's details.
@@ -322,6 +376,15 @@ public class ReclamationServiceImpl implements ReclamationService {
             sousCategorie = sousCategorieService.getSousCategorieById(request.getSousCategorieId()).orElse(null);
         }
         Reclamation reclamation = ReclamationMapper.fromCreateRequest(request, user, categorie, sousCategorie);
+
+        // --- SLA Logic: Set SLA deadline based on category and priority ---
+        String categoryName = categorie.getNom(); // Assumes Categorie has getNom()
+        String priority = reclamation.getPriorite() != null ? reclamation.getPriorite().name() : null;
+        int slaHours = getSlaDurationHours(categoryName, priority);
+        reclamation.setDateEcheance(reclamation.getDateCreation().plus(slaHours, ChronoUnit.HOURS));
+        reclamation.setSlaBreached(false);
+        // --- End SLA Logic ---
+
         Reclamation saved = reclamationRepository.save(reclamation);
         return ReclamationMapper.toResponse(saved, fichierService, commentaireService, notificationService);
     }
@@ -390,6 +453,7 @@ public class ReclamationServiceImpl implements ReclamationService {
      * @throws RuntimeException if the complaint is not found or access is denied
      */
     @Override
+    @Transactional
     public ReclamationResponse updateReclamation(java.util.UUID id, ReclamationUpdateRequest request) {
         UserPrincipal userPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserById(userPrincipal.getId());
@@ -517,7 +581,9 @@ public class ReclamationServiceImpl implements ReclamationService {
                     Fichier fichier = fichierService.getFileById(UUID.fromString(fileId));
                     if (fichier != null) {
                         fichier.setReclamation(reclamation);
-                        fichierService.uploadFile(fichier); 
+                        fichierService.uploadFile(fichier);
+                        // Notify file added
+                        notifyFileChange(reclamation, fichier.getNomOriginal(), "ajouté");
                     }
                 }
             }
@@ -526,7 +592,9 @@ public class ReclamationServiceImpl implements ReclamationService {
                     Fichier fichier = fichierService.getFileById(UUID.fromString(fileId));
                     if (fichier != null && fichier.getReclamation() != null && fichier.getReclamation().getId().equals(reclamation.getId())) {
                         fichier.setReclamation(null);
-                        fichierService.uploadFile(fichier); 
+                        fichierService.uploadFile(fichier);
+                        // Notify file removed
+                        notifyFileChange(reclamation, fichier.getNomOriginal(), "supprimé");
                     }
                 }
             }
@@ -570,6 +638,85 @@ public class ReclamationServiceImpl implements ReclamationService {
     }
 
     /**
+     * Escalates a complaint to a supervisor and notifies relevant parties.
+     *
+     * @param reclamationId the ID of the complaint to escalate
+     * @param supervisorId the ID of the supervisor to escalate to
+     * @param reason the reason for escalation
+     * @param user the user performing the escalation
+     */
+    @Transactional
+    public void escalateReclamation(UUID reclamationId, UUID supervisorId, String reason, User user) {
+        Reclamation reclamation = reclamationRepository.findById(reclamationId)
+            .orElseThrow(() -> new ResourceNotFoundException("Reclamation non trouvée"));
+        reclamation.escalader(supervisorId, reason);
+        reclamationRepository.save(reclamation);
+
+        // Notify owner
+        Notification notifOwner = new Notification();
+        notifOwner.setDestinataire(reclamation.getUtilisateur());
+        notifOwner.setType(Notification.Type.PUSH);
+        notifOwner.setSujet("Votre réclamation a été escaladée");
+        notifOwner.setContenu("Votre réclamation '" + reclamation.getTitre() + "' a été escaladée pour la raison : " + reason);
+        notifOwner.setReclamation(reclamation);
+        notificationService.sendNotification(notifOwner);
+
+        // Notify assigned agent (if any)
+        if (reclamation.getAgentAssigne() != null) {
+            Notification notifAgent = new Notification();
+            notifAgent.setDestinataire(reclamation.getAgentAssigne());
+            notifAgent.setType(Notification.Type.PUSH);
+            notifAgent.setSujet("Réclamation escaladée");
+            notifAgent.setContenu("La réclamation '" + reclamation.getTitre() + "' que vous traitez a été escaladée.");
+            notifAgent.setReclamation(reclamation);
+            notificationService.sendNotification(notifAgent);
+        }
+
+        // Notify supervisor (if needed)
+        User supervisor = userService.getUserById(supervisorId);
+        if (supervisor != null) {
+            Notification notifSupervisor = new Notification();
+            notifSupervisor.setDestinataire(supervisor);
+            notifSupervisor.setType(Notification.Type.PUSH);
+            notifSupervisor.setSujet("Nouvelle réclamation escaladée");
+            notifSupervisor.setContenu("Une réclamation a été escaladée à votre attention : '" + reclamation.getTitre() + "'. Raison : " + reason);
+            notifSupervisor.setReclamation(reclamation);
+            notificationService.sendNotification(notifSupervisor);
+        }
+    }
+
+    /**
+     * Notifies relevant parties when a file is added or removed from a complaint.
+     *
+     * @param reclamation the complaint entity
+     * @param fileName the name of the file added/removed
+     * @param action "ajouté" or "supprimé"
+     */
+    private void notifyFileChange(Reclamation reclamation, String fileName, String action) {
+        String message = "Un fichier a été " + action + " à la réclamation '" + reclamation.getTitre() + "': " + fileName;
+
+        // Notify owner
+        Notification notifOwner = new Notification();
+        notifOwner.setDestinataire(reclamation.getUtilisateur());
+        notifOwner.setType(Notification.Type.PUSH);
+        notifOwner.setSujet("Fichier " + action + " à votre réclamation");
+        notifOwner.setContenu(message);
+        notifOwner.setReclamation(reclamation);
+        notificationService.sendNotification(notifOwner);
+
+        // Notify assigned agent (if any)
+        if (reclamation.getAgentAssigne() != null) {
+            Notification notifAgent = new Notification();
+            notifAgent.setDestinataire(reclamation.getAgentAssigne());
+            notifAgent.setType(Notification.Type.PUSH);
+            notifAgent.setSujet("Fichier " + action + " à une réclamation assignée");
+            notifAgent.setContenu(message);
+            notifAgent.setReclamation(reclamation);
+            notificationService.sendNotification(notifAgent);
+        }
+    }
+
+    /**
      * Deletes a complaint by its ID. Only admins are authorized to delete complaints.
      *
      * @param id UUID of the complaint to delete
@@ -593,4 +740,84 @@ public class ReclamationServiceImpl implements ReclamationService {
         return reclamationRepository.findWithFilters(statut, priorite, categorieId, sousCategorieId, agentId, utilisateurId, pageable);
     }
 
+    /**
+     * Scheduled SLA enforcement: checks for overdue complaints and triggers notifications.
+     * Runs every hour by default (configurable via 'gira.sla.check.cron').
+     * Notifies assigned agent and supervisor if available.
+     */
+    @Scheduled(cron = "${gira.sla.check.cron:0 0 * * * *}") // Default: every hour
+    public void enforceSlaBreaches() {
+        List<Reclamation> overdue = reclamationRepository.findAll().stream()
+            .filter(r -> !r.isSlaBreached())
+            .filter(r -> r.getDateEcheance() != null && r.getDateEcheance().isBefore(LocalDateTime.now()))
+            .filter(r -> r.getStatut() != Reclamation.Statut.RESOLUE && r.getStatut() != Reclamation.Statut.FERMEE)
+            .collect(Collectors.toList());
+        // Find all supervisors
+        List<User> supervisors = userRepository.findAll().stream()
+            .filter(u -> u.getRole() != null && "SUPERVISEUR".equalsIgnoreCase(u.getRole().getNom()))
+            .collect(Collectors.toList());
+        for (Reclamation r : overdue) {
+            r.setSlaBreached(true);
+            User agent = r.getAgentAssigne();
+            if (!supervisors.isEmpty()) {
+                User assignedSupervisor = supervisors.get(0); // Assign to first supervisor
+                r.setAgentAssigne(assignedSupervisor);
+                r.setPriorite(Reclamation.Priorite.URGENTE);
+                // Log escalation in history
+                Historique hist = new Historique();
+                hist.setReclamation(r);
+                hist.setUtilisateur(assignedSupervisor);
+                hist.setAction("ESCALADE_SLA");
+                hist.setAncienneValeur(agent != null ? agent.getNom() + " " + agent.getPrenom() : null);
+                hist.setNouvelleValeur(assignedSupervisor.getNom() + " " + assignedSupervisor.getPrenom());
+                hist.setDateAction(LocalDateTime.now());
+                hist.setCommentaire("Escalade automatique suite à un dépassement de SLA");
+                historiqueService.addHistorique(hist);
+                // Notify all supervisors (PUSH + EMAIL)
+                for (User supervisor : supervisors) {
+                    Notification notifSup = new Notification();
+                    notifSup.setDestinataire(supervisor);
+                    notifSup.setType(Notification.Type.PUSH);
+                    notifSup.setSujet("SLA Breach: Complaint auto-escalated");
+                    notifSup.setContenu("The complaint '" + r.getTitre() + "' has been auto-escalated to supervisor due to SLA breach.");
+                    notifSup.setReclamation(r);
+                    notificationService.sendNotification(notifSup);
+                    Notification notifSupEmail = new Notification();
+                    notifSupEmail.setDestinataire(supervisor);
+                    notifSupEmail.setType(Notification.Type.EMAIL);
+                    notifSupEmail.setSujet("[GIRA] Complaint auto-escalated to supervisor");
+                    notifSupEmail.setContenu("Bonjour " + supervisor.getPrenom() + ",\n\nLa réclamation '" + r.getTitre() + "' a été automatiquement escaladée à un superviseur suite à un dépassement de SLA.\nMerci de la traiter en urgence.\n\nCordialement,\nGIRA");
+                    notifSupEmail.setReclamation(r);
+                    notificationService.sendNotification(notifSupEmail);
+                }
+                // Notify previous agent (EMAIL)
+                if (agent != null) {
+                    Notification notifAgentEmail = new Notification();
+                    notifAgentEmail.setDestinataire(agent);
+                    notifAgentEmail.setType(Notification.Type.EMAIL);
+                    notifAgentEmail.setSujet("[GIRA] Complaint auto-escalated to supervisor");
+                    notifAgentEmail.setContenu("Bonjour " + agent.getPrenom() + ",\n\nLa réclamation '" + r.getTitre() + "' a été automatiquement escaladée à un superviseur suite à un dépassement de SLA.\n\nCordialement,\nGIRA");
+                    notifAgentEmail.setReclamation(r);
+                    notificationService.sendNotification(notifAgentEmail);
+                }
+            } else if (agent != null) {
+                // No supervisor: just notify agent (PUSH + EMAIL)
+                Notification notif = new Notification();
+                notif.setDestinataire(agent);
+                notif.setType(Notification.Type.PUSH);
+                notif.setSujet("SLA Breach: Complaint overdue");
+                notif.setContenu("The complaint '" + r.getTitre() + "' has breached its SLA deadline and requires urgent attention.");
+                notif.setReclamation(r);
+                notificationService.sendNotification(notif);
+                Notification notifEmail = new Notification();
+                notifEmail.setDestinataire(agent);
+                notifEmail.setType(Notification.Type.EMAIL);
+                notifEmail.setSujet("[GIRA] Complaint overdue (SLA breach)");
+                notifEmail.setContenu("Bonjour " + agent.getPrenom() + ",\n\nLa réclamation '" + r.getTitre() + "' a dépassé son délai SLA et nécessite une attention urgente.\n\nCordialement,\nGIRA");
+                notifEmail.setReclamation(r);
+                notificationService.sendNotification(notifEmail);
+            }
+            reclamationRepository.save(r);
+        }
+    }
 } 
