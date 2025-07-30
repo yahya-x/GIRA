@@ -1,0 +1,76 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Debug Spring Boot Application",
+      "request": "launch",
+      "mainClass": "com.GIRA.Backend.GiraApplication",
+      "projectName": "backend",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "SPRING_PROFILES_ACTIVE": "dev"
+      },
+      "args": "",
+      "console": "internalConsole",
+      "stopOnEntry": false,
+      "internalConsoleOptions": "openOnSessionStart"
+    },
+    {
+      "type": "java",
+      "name": "Debug Spring Boot Tests",
+      "request": "launch",
+      "mainClass": "org.junit.platform.console.ConsoleLauncher",
+      "projectName": "backend",
+      "cwd": "${workspaceFolder}/backend",
+      "args": "--class-path . --scan-class-path",
+      "console": "internalConsole",
+      "stopOnEntry": false
+    },
+    {
+      "type": "node",
+      "name": "Debug Frontend (Vite)",
+      "request": "launch",
+      "program": "${workspaceFolder}/frontend/node_modules/.bin/vite",
+      "args": ["--port", "3000"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal",
+      "restart": true,
+      "protocol": "inspector",
+      "port": 9229,
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    {
+      "type": "chrome",
+      "name": "Launch Chrome against localhost",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/*"
+      }
+    },
+    {
+      "type": "chrome",
+      "name": "Attach to Chrome",
+      "request": "attach",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/*"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Full Stack",
+      "configurations": [
+        "Debug Spring Boot Application",
+        "Debug Frontend (Vite)"
+      ],
+      "stopAll": true
+    }
+  ]
+} 

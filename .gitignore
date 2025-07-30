@@ -5,7 +5,10 @@ build/
 
 # IDEs and editors
 .idea/
-.vscode/
+.vscode/*
+!/.vscode/settings.json
+!/.vscode/extensions.json
+!/.vscode/launch.json
 *.iml
 *.ipr
 *.iws
