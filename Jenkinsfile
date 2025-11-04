@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+
+    triggers {
+        githubPush()
+    }
+
     environment {
         DOCKER_COMPOSE_DEV = "docker/docker-compose.dev.yaml"
         DOCKER_COMPOSE_TEST = "docker/docker-compose.test.yaml"
@@ -61,7 +66,7 @@ pipeline {
             }
         }
 
-        // Optionnel : push image sur un registrywww
+        // Optionnel : push image sur un registry
         // stage('Push Docker Image') {
         //     steps {
         //         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
