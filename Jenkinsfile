@@ -61,7 +61,7 @@ pipeline {
             }
         }
 
-        // Optionnel : push image sur un registry
+        // Optionnel : push image sur un registrywww
         // stage('Push Docker Image') {
         //     steps {
         //         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
